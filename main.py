@@ -275,7 +275,7 @@ def run_class_incremental(cfg, device):
                 # for name, p in model.named_parameters():
                 #     if p.requires_grad:
                 #         print(f"Param training: {name}")
-                print("=== DEBUG ===")
+                print("=================== DEBUG ===============================================================================")
                 print("loss.requires_grad:", loss.requires_grad)
                 print("outputs.requires_grad:", outputs.requires_grad)
 

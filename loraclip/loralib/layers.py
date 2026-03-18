@@ -517,14 +517,15 @@ class MultiheadAttention(nn.Module):
         coef = self.coef_k[task]
         device = coef.device
 
-        F = torch.zeros(self.embed_dim * self.embed_dim, device=device, dtype=coef.dtype)
+        F = torch.zeros(self.embed_dim, self.embed_dim, device=device, dtype=coef.dtype)
 
-        idx = self.indices[task][0] * self.embed_dim + self.indices[task][1]
+        indices = self.indices[task]
+        F = F.index_put(
+            (indices[0], indices[1]),
+            coef
+        )
 
-        F = F.scatter(0, idx, coef)
-        F = F.view(self.embed_dim, self.embed_dim)
-
-        delta_w = torch.fft.ifft2(F, dim=(-2,-1)).real
+        delta_w = torch.fft.ifft2(F, dim=(-2, -1)).real
         return delta_w * alpha
     
     # def get_delta_w_v(self, task, alpha=300):
@@ -536,30 +537,18 @@ class MultiheadAttention(nn.Module):
     #     F[indices[0,:], indices[1,:]] =  self.coef_v[task]
     #     return torch.fft.ifft2(F, dim=(-2,-1)).real * 
     def get_delta_w_v(self, task, alpha=300):
-        coef = self.coef_v[task] # Lấy tham số thực sự
-        device = coef.device
-
-        # LỖI CŨ: F = torch.zeros(...).to(device) -> Tạo tensor mới rồi chuyển device làm mất grad_fn
-        # SỬA THÀNH: Khởi tạo trực tiếp trên device với dtype của coef
-        F = torch.zeros(self.embed_dim, self.embed_dim, device=device, dtype=coef.dtype)
-
-        # Phép gán này trên tensor F (đã đúng device/dtype) sẽ giữ được liên kết với coef
-        F[self.indices[task][0], self.indices[task][1]] = coef
-
-        delta_w = torch.fft.ifft2(F, dim=(-2,-1)).real
-        return delta_w * alpha
-    def get_delta_w_v(self, task, alpha=300):
         coef = self.coef_v[task]
         device = coef.device
 
-        F = torch.zeros(self.embed_dim * self.embed_dim, device=device, dtype=coef.dtype)
+        F = torch.zeros(self.embed_dim, self.embed_dim, device=device, dtype=coef.dtype)
 
-        idx = self.indices[task][0] * self.embed_dim + self.indices[task][1]
+        indices = self.indices[task]
+        F = F.index_put(
+            (indices[0], indices[1]),
+            coef
+        )
 
-        F = F.scatter(0, idx, coef)
-        F = F.view(self.embed_dim, self.embed_dim)
-
-        delta_w = torch.fft.ifft2(F, dim=(-2,-1)).real
+        delta_w = torch.fft.ifft2(F, dim=(-2, -1)).real
         return delta_w * alpha
     #================================================================
 
@@ -888,8 +877,8 @@ class MultiheadAttention(nn.Module):
                 k = k + linear(key, self.get_delta_w_k(_cur_task)) * k_proj_weight_scaling
                 v = v + linear(value, self.get_delta_w_v(_cur_task)) * v_proj_weight_scaling
                 # # Kiểm tra k và v có mang theo grad_fn không
-                # print(f"DEBUG: k.grad_fn = {k.grad_fn}")
-                # print(f"DEBUG: v.grad_fn = {v.grad_fn}")
+                print(f"DEBUG: k.grad_fn = {k.grad_fn}")
+                print(f"DEBUG: v.grad_fn = {v.grad_fn}")
 
                 # Kiểm tra riêng thành phần FFT
                 # delta_k_out = linear(key, delta_w_k)
