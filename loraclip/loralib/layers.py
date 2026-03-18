@@ -476,12 +476,12 @@ class MultiheadAttention(nn.Module):
         g_cpu.manual_seed(11)
 
         self.coef_k = nn.ParameterList([
-        nn.Parameter(torch.randn(self.n_frq, generator=g_cuda, device=self.device))
+        nn.Parameter(torch.randn(self.n_frq, generator=g_cuda, device=self.device), requires_grad=True)
         for _ in range(n_tasks)
-        ], requires_grad=True)
+        ])
 
         self.coef_v = nn.ParameterList([
-        nn.Parameter(torch.randn(self.n_frq, generator=g_cuda, device=self.device))
+        nn.Parameter(torch.randn(self.n_frq, generator=g_cuda, device=self.device), requires_grad=True)
         for _ in range(n_tasks)
         ], requires_grad=True)
 
