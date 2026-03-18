@@ -930,12 +930,12 @@ def multi_head_attention_forward(query: Tensor,
             # k += linear(key, delta_w_k) * k_proj_weight_scaling
             # v += linear(value, delta_w_v) * v_proj_weight_scaling
             # Kiểm tra k và v có mang theo grad_fn không
-            print(f"DEBUG: k.grad_fn = {k.grad_fn}")
-            print(f"DEBUG: v.grad_fn = {v.grad_fn}")
+            # print(f"DEBUG: k.grad_fn = {k.grad_fn}")
+            # print(f"DEBUG: v.grad_fn = {v.grad_fn}")
 
-            # Kiểm tra riêng thành phần FFT
-            delta_k_out = linear(key, delta_w_k)
-            print(f"DEBUG: delta_k_out.grad_fn = {delta_k_out.grad_fn}")
+            # # Kiểm tra riêng thành phần FFT
+            # delta_k_out = linear(key, delta_w_k)
+            # print(f"DEBUG: delta_k_out.grad_fn = {delta_k_out.grad_fn}")
 
             pass
         elif mlp:
