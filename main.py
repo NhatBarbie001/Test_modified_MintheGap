@@ -224,10 +224,7 @@ def run_class_incremental(cfg, device):
         for i_epoch in range(epochs):
 
             for bach_i, (inputs, targets, t) in enumerate(train_loader):
-                loss_c = torch.tensor(0.0).to(device)
-                loss = torch.tensor(0.0).to(device)
-
-                replay_loss = torch.tensor(0.0).to(device)
+                replay_loss = torch.tensor(0.0, device=device)
                 torch.cuda.empty_cache()
 
 
@@ -248,7 +245,8 @@ def run_class_incremental(cfg, device):
                     pass
                 else:
                     loss_c = torch.nn.functional.cross_entropy(outputs, targets) 
-                loss += loss_c
+
+                loss = loss_c
                 optimizer.zero_grad()
                 loss.backward()
                 optimizer.step()
@@ -294,17 +292,14 @@ def run_class_incremental(cfg, device):
             scheduler = torch.optim.lr_scheduler.CosineAnnealingLR(optimizer, epochs, eta_min=cfg.lr*0.001)   
             for i_epoch in range(epochs):
                 for bach_i, (inputs, targets, t) in enumerate(balance_loader):
-                    loss_c = torch.tensor(0.0).to(device)
-                    loss = torch.tensor(0.0).to(device)
-
-                    replay_loss = torch.tensor(0.0).to(device)
+                    replay_loss = torch.tensor(0.0, device=device)
                     torch.cuda.empty_cache()
 
                     inputs, targets = inputs.to(device), targets.to(device)
                     outputs =  model(inputs, _cur_task=task_id)
                     # image_f, text_f = model(inputs, return_feature=True)
                     loss_c = torch.nn.functional.cross_entropy(outputs, targets)
-                    loss += loss_c
+                    loss = loss_c
                     optimizer.zero_grad()
                     loss.backward()
                     optimizer.step()
