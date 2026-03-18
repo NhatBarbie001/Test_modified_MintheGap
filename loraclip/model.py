@@ -246,10 +246,13 @@ class Transformer(nn.Module):
         super().__init__()
         self.width = width
         self.layers = layers
-        self.resblocks = nn.Sequential(*[ResidualAttentionBlock(width, heads, attn_mask) for _ in range(layers)])
-
+        #self.resblocks = nn.Sequential(*[ResidualAttentionBlock(width, heads, attn_mask) for _ in range(layers)])
+        self.resblocks = nn.ModuleList([ LoRAResidualAttentionBlock(width, heads, attn_mask) for _ in range(layers) ])
     def forward(self, x: torch.Tensor):
-        return self.resblocks(x)
+        for block in self.resblocks: 
+            x = block(x) 
+        return x
+        #return self.resblocks(x)
 
 
 # LoRA implementation of Transformer:
