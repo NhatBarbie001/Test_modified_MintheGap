@@ -130,9 +130,9 @@ def run_class_incremental(cfg, device):
     #                 if "coef_v" + "." + str(task_id) in name:
     #                     param.requires_grad_(False)
     for name, param in model.named_parameters():
-            param.requires_grad_(True)
+            param.requires_grad_(False)
             try:
-                # for task_id in range(cfg.task_num):
+                for task_id in range(cfg.task_num):
                     if "classifier_pool" + "." + str(task_id) in name:
                         param.requires_grad_(True)
                     if "coef_k" + "." + str(task_id) in name:
@@ -140,7 +140,7 @@ def run_class_incremental(cfg, device):
                     if "coef_v" + "." + str(task_id) in name:
                         param.requires_grad_(True)
             except:
-                # for task_id in range(cfg.task_num):
+                for task_id in range(cfg.task_num):
                     if "classifier_pool" + "." + str(task_id) in name:
                         param.requires_grad_(True)
                     if "coef_k" + "." + str(task_id) in name:
