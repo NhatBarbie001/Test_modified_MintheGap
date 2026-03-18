@@ -146,8 +146,7 @@ def run_class_incremental(cfg, device):
         trainable_params = {k: v for k, v in  model.named_parameters() if v.requires_grad}
         torch.save(trainable_params, f'trainable_params.pth')
 
-        trainable_params = torch.load(f'ori_params.pth')
-        model.load_state_dict(trainable_params, strict=False)
+        
         for name, param in model.named_parameters():
             # param.requires_grad_(False)
             try:
@@ -183,7 +182,8 @@ def run_class_incremental(cfg, device):
                             param.requires_grad_(False)
                         if "coef_v" + "." + str(task_) in name:
                             param.requires_grad_(False)
-
+        trainable_params = torch.load(f'ori_params.pth')
+        model.load_state_dict(trainable_params, strict=False)
         # 计算未经训练时正类别和负类别的输出平均值
         model.eval()  # 切换到评估模式
         positive_outputs = []
