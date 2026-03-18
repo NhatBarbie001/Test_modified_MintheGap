@@ -511,15 +511,24 @@ class MultiheadAttention(nn.Module):
         indices = torch.stack([indices // dim, indices % dim], dim=0)
         return indices
     
+    # def get_delta_w_k(self, task, alpha=300):
+    #     device = self.coef_k[task].device
+
+    #     indices = self.indices[task]
+    #     # F = torch.zeros(self.dim, self.dim).to(self.qkv.weight.device)
+    #     F = torch.zeros(self.embed_dim, self.embed_dim).to(device)
+    #     F[indices[0,:], indices[1,:]] =  self.coef_k[task]
+    #     return torch.fft.ifft2(F, dim=(-2,-1)).real * alpha
     def get_delta_w_k(self, task, alpha=300):
-        device = self.coef_k[task].device
-
-        indices = self.indices[task]
-        # F = torch.zeros(self.dim, self.dim).to(self.qkv.weight.device)
-        F = torch.zeros(self.embed_dim, self.embed_dim).to(device)
-        F[indices[0,:], indices[1,:]] =  self.coef_k[task]
-        return torch.fft.ifft2(F, dim=(-2,-1)).real * alpha
-
+        coef = self.coef_k[task]
+        device = coef.device
+        # Khởi tạo F có cùng dtype và device, quan trọng là cho phép dẫn truyền grad
+        F = torch.zeros(self.embed_dim, self.embed_dim, device=device, dtype=coef.dtype)
+        F[self.indices[task][0], self.indices[task][1]] = coef
+        
+        # ifft2 và .real đều hỗ trợ autograd, nên đoạn này ổn
+        delta_w = torch.fft.ifft2(F, dim=(-2,-1)).real
+        return delta_w * alpha
     
     def get_delta_w_v(self, task, alpha=300):
         device = self.coef_v[task].device
