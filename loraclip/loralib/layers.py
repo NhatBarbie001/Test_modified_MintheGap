@@ -927,16 +927,16 @@ def multi_head_attention_forward(self,
                 v = linear(value, v_proj_weight_non_opt, in_proj_bias)
 
             # q += linear(linear(query, q_proj_weight_non_opt_A), q_proj_weight_non_opt_B) * q_proj_weight_scaling
-            # k += linear(linear(key, k_proj_weight_non_opt_A), k_proj_weight_non_opt_B) * k_proj_weight_scaling
-            # v += linear(linear(value, v_proj_weight_non_opt_A), v_proj_weight_non_opt_B) * v_proj_weight_scaling
-            k += linear(key, self.get_delta_w_k(_cur_task)) * k_proj_weight_scaling
-            v += linear(value, self.get_delta_w_v(_cur_task)) * v_proj_weight_scaling
+            k += linear(linear(key, k_proj_weight_non_opt_A), k_proj_weight_non_opt_B) * k_proj_weight_scaling
+            v += linear(linear(value, v_proj_weight_non_opt_A), v_proj_weight_non_opt_B) * v_proj_weight_scaling
+            # k = k + linear(key, self.get_delta_w_k(_cur_task)) * k_proj_weight_scaling
+            # v = v + linear(value, self.get_delta_w_v(_cur_task)) * v_proj_weight_scaling
             # Kiểm tra k và v có mang theo grad_fn không
-            # print(f"DEBUG: k.grad_fn = {k.grad_fn}")
-            # print(f"DEBUG: v.grad_fn = {v.grad_fn}")
+            print(f"DEBUG: k.grad_fn = {k.grad_fn}")
+            print(f"DEBUG: v.grad_fn = {v.grad_fn}")
 
-            # # Kiểm tra riêng thành phần FFT
-            # delta_k_out = linear(key, delta_w_k)
+            # Kiểm tra riêng thành phần FFT
+            delta_k_out = linear(key, delta_w_k)
             # print(f"DEBUG: delta_k_out.grad_fn = {delta_k_out.grad_fn}")
 
             pass
