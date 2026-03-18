@@ -76,9 +76,9 @@ def run_class_incremental(cfg, device):
     cfg.class_order = utils.get_class_order(os.path.join(cfg.workdir, cfg.class_order))
     model = load_model(cfg, device)
 
-    for module in model.modules():
-        if isinstance(module, MultiheadAttention):
-            module.init_param()
+    # for module in model.modules():
+    #     if isinstance(module, MultiheadAttention):
+    #         module.init_param()
 
     eval_dataset, classes_names = build_cl_scenarios(
         cfg, is_train=False, transforms=model.transforms
