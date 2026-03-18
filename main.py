@@ -4,6 +4,7 @@ import json
 import pdb
 import hydra
 import logging
+from loraclip.loralib.layers import MultiheadAttention
 from omegaconf import DictConfig
 
 import torch
@@ -75,6 +76,10 @@ def run_class_incremental(cfg, device):
     cfg.class_order = utils.get_class_order(os.path.join(cfg.workdir, cfg.class_order))
     model = load_model(cfg, device)
 
+    for module in model.modules():
+        if isinstance(module, MultiheadAttention):
+            module.init_param()
+
     eval_dataset, classes_names = build_cl_scenarios(
         cfg, is_train=False, transforms=model.transforms
     )
@@ -105,6 +110,25 @@ def run_class_incremental(cfg, device):
             memory_size=2000,
             herding_method="random"
         )
+
+    for name, param in model.named_parameters():
+            param.requires_grad_(False)
+            try:
+                for task_id in range(cfg.task_num):
+                    if "classifier_pool" + "." + str(task_id) in name:
+                        param.requires_grad_(True)
+                    if "coef_k" + "." + str(task_id) in name:
+                        param.requires_grad_(True)
+                    if "coef_v" + "." + str(task_id) in name:
+                        param.requires_grad_(True)
+            except:
+                for task_id in range(cfg.task_num):
+                    if "classifier_pool" + "." + str(task_id) in name:
+                        param.requires_grad_(True)
+                    if "coef_k" + "." + str(task_id) in name:
+                        param.requires_grad_(True)
+                    if "coef_v" + "." + str(task_id) in name:
+                        param.requires_grad_(True)
     for task_id, _ in enumerate(eval_dataset):
 
         # negative_records = 0
