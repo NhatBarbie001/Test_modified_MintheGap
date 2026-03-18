@@ -467,24 +467,27 @@ class MultiheadAttention(nn.Module):
         # self.coef_k = nn.ParameterList([nn.Parameter(torch.randn(self.n_frq), requires_grad=True) for _ in range(n_tasks)]).to(self.device)
         # self.coef_v = nn.ParameterList([nn.Parameter(torch.randn(self.n_frq), requires_grad=True) for _ in range(n_tasks)]).to(self.device)
         # 👉 tạo generator riêng
-        g = torch.Generator(device=self.device)
-        g.manual_seed(2911)
+        # generator cho weight (GPU)
+        g_cuda = torch.Generator(device=self.device)
+        g_cuda.manual_seed(29)
 
-        # 👉 init params bằng generator riêng
+        # generator cho indices (CPU)
+        g_cpu = torch.Generator(device="cpu")
+        g_cpu.manual_seed(11)
+
         self.coef_k = nn.ParameterList([
-            nn.Parameter(torch.randn(self.n_frq, generator=g, device=self.device))
-            for _ in range(n_tasks)
+        nn.Parameter(torch.randn(self.n_frq, generator=g_cuda, device=self.device))
+        for _ in range(n_tasks)
         ])
 
         self.coef_v = nn.ParameterList([
-            nn.Parameter(torch.randn(self.n_frq, generator=g, device=self.device))
-            for _ in range(n_tasks)
+        nn.Parameter(torch.randn(self.n_frq, generator=g_cuda, device=self.device))
+        for _ in range(n_tasks)
         ])
 
-        # 👉 indices cũng nên dùng generator riêng (tránh lệch RNG global)
         self.indices = [
-            self.select_pos(t, self.embed_dim, generator=g).to(self.device)
-            for t in range(n_tasks)
+        self.select_pos(t, self.embed_dim, generator=g_cpu).to(self.device)
+        for t in range(n_tasks)
         ]
 
         self.init_param()
