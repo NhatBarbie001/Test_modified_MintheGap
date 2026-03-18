@@ -14,7 +14,7 @@ from .layers import LoRALayer
 
 def mark_only_lora_as_trainable(model: nn.Module, bias: str = 'none') -> None:
     for n, p in model.named_parameters():
-        if 'lora_' not in n:
+        if 'lora_' not in n or 'coef' not in n:
             p.requires_grad = False
         #     print(f'Freezing {n}')
         # else:
