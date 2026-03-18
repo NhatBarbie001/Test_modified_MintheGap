@@ -99,7 +99,17 @@ def run_class_incremental(cfg, device):
     trainable_params = {k: v for k, v in model.named_parameters() if v.requires_grad}
     # pdb.set_trace()
     torch.save(trainable_params, f'ori_params.pth')
-
+    # --- DEBUG: In ra các tham số trainable ---
+    logging.info("="*30)
+    logging.info("LIST OF----- ori_params----- TRAINABLE PARAMETERS:")
+    trainable_params_count = 0
+    for name, param in model.named_parameters():
+        if param.requires_grad:
+            logging.info(f"Layer: {name:50} | Shape: {str(param.shape):30} | Size: {param.numel():,}")
+            trainable_params_count += param.numel()
+    logging.info(f"Total Trainable Params: {trainable_params_count:,}")
+    logging.info("="*30)
+    # ------------------------------------------
     if cfg.real_replay:
         memory = rehearsal.RehearsalMemory(
             memory_size=2000,
