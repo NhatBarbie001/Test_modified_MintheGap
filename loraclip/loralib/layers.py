@@ -462,12 +462,32 @@ class MultiheadAttention(nn.Module):
 
         self.add_zero_attn = add_zero_attn
         #--------------FFT heree----------------
-        # self.n_frq = n_frq
-        # self.device = device
+        self.n_frq = n_frq
+        self.device = device
         # self.coef_k = nn.ParameterList([nn.Parameter(torch.randn(self.n_frq), requires_grad=True) for _ in range(n_tasks)]).to(self.device)
         # self.coef_v = nn.ParameterList([nn.Parameter(torch.randn(self.n_frq), requires_grad=True) for _ in range(n_tasks)]).to(self.device)
-        # self.indices = [self.select_pos(t, self.embed_dim).to(self.device) for t in range(n_tasks)]
-        # self.init_param()
+        # 👉 tạo generator riêng
+        g = torch.Generator(device=self.device)
+        g.manual_seed(2911)
+
+        # 👉 init params bằng generator riêng
+        self.coef_k = nn.ParameterList([
+            nn.Parameter(torch.randn(self.n_frq, generator=g, device=self.device))
+            for _ in range(n_tasks)
+        ])
+
+        self.coef_v = nn.ParameterList([
+            nn.Parameter(torch.randn(self.n_frq, generator=g, device=self.device))
+            for _ in range(n_tasks)
+        ])
+
+        # 👉 indices cũng nên dùng generator riêng (tránh lệch RNG global)
+        self.indices = [
+            self.select_pos(t, self.embed_dim, generator=g).to(self.device)
+            for t in range(n_tasks)
+        ]
+
+        self.init_param()
         #---------------------------------------
 
 
@@ -479,8 +499,12 @@ class MultiheadAttention(nn.Module):
         for t in range(len(self.coef_v)):
             nn.init.zeros_(self.coef_v[t])
     
-    def select_pos(self, t, dim, seed=777):
-        indices = torch.randperm(dim * dim, generator=torch.Generator().manual_seed(seed+t*10))[:self.n_frq]
+    # ⚠️ sửa select_pos để nhận generator
+    def select_pos(self, t, dim, generator=None):
+        if generator is None:
+            generator = torch.Generator(device=self.device).manual_seed(777 + t * 10)
+
+        indices = torch.randperm(dim * dim, generator=generator)[:self.n_frq]
         indices = torch.stack([indices // dim, indices % dim], dim=0)
         return indices
     
@@ -491,28 +515,8 @@ class MultiheadAttention(nn.Module):
         # F = torch.zeros(self.dim, self.dim).to(self.qkv.weight.device)
         F = torch.zeros(self.embed_dim, self.embed_dim).to(device)
         F[indices[0,:], indices[1,:]] =  self.coef_k[task]
-
-        # F = torch.zeros(self.embed_dim * self.embed_dim, device=device)
-
-        # flat_indices = indices[0] * self.embed_dim + indices[1]
-
-        # F = F.scatter(0, flat_indices, self.coef_k[task])
-
-        # F = F.view(self.embed_dim, self.embed_dim)
         return torch.fft.ifft2(F, dim=(-2,-1)).real * alpha
-    # def get_delta_w_k(self, task, alpha=300):
-    #     device = self.coef_k[task].device
-    #     indices = self.indices[task]  # (2, n_frq)
-    #     values = self.coef_k[task]
 
-    #     F = torch.sparse_coo_tensor(
-    #         indices,
-    #         values,
-    #         (self.embed_dim, self.embed_dim),
-    #         device=device
-    #     ).to_dense()
-
-    #     return torch.fft.ifft2(F, dim=(-2, -1)).real * alpha
     
     def get_delta_w_v(self, task, alpha=300):
         device = self.coef_v[task].device
@@ -521,26 +525,7 @@ class MultiheadAttention(nn.Module):
         # F = torch.zeros(self.dim, self.dim).to(self.qkv.weight.device)
         F = torch.zeros(self.embed_dim, self.embed_dim).to(device)
         F[indices[0,:], indices[1,:]] =  self.coef_v[task]
-        # F = torch.zeros(self.embed_dim * self.embed_dim, device=device)
-
-        # flat_indices = indices[0] * self.embed_dim + indices[1]
-
-        # F = F.scatter(0, flat_indices, self.coef_v[task])
-
-        # F = F.view(self.embed_dim, self.embed_dim)
         return torch.fft.ifft2(F, dim=(-2,-1)).real * alpha
-    # def get_delta_w_v(self, task, alpha=300):
-    #     device = self.coef_v[task].device
-    #     indices = self.indices[task]  # (2, n_frq)
-    #     values = self.coef_v[task]
-
-    #     F = torch.sparse_coo_tensor(
-    #         indices,
-    #         values,
-    #         (self.embed_dim, self.embed_dim),
-    #         device=device
-    #     ).to_dense()
-    #     return torch.fft.ifft2(F, dim=(-2, -1)).real * alpha
     #================================================================
 
     def _reset_parameters(self):
