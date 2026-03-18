@@ -591,7 +591,7 @@ class MultiheadAttention(nn.Module):
         super(MultiheadAttention, self).__setstate__(state)
 
     def forward(self, query, key, value, key_padding_mask=None,
-                need_weights=True, attn_mask=None):
+                need_weights=True, attn_mask=None,  _cur_task: int=-1):
         # type: (Tensor, Tensor, Tensor, Optional[Tensor], bool, Optional[Tensor]) -> Tuple[Tensor, Optional[Tensor]]
         r"""
     Args:
@@ -654,6 +654,9 @@ class MultiheadAttention(nn.Module):
                 #     training=self.training,
                 #     key_padding_mask=key_padding_mask, need_weights=need_weights,
                 #     attn_mask=attn_mask)
+
+                delta_w_k = self.get_delta_w_k(_cur_task)
+                delta_w_v = self.get_delta_w_v(_cur_task)
                 return multi_head_attention_forward(
                     query, key, value, self.embed_dim, self.num_heads,
                     self.in_proj_weight, self.in_proj_bias, self.in_proj_weight_lora_A, self.in_proj_weight_lora_B, self.scaling,
@@ -666,7 +669,9 @@ class MultiheadAttention(nn.Module):
                     q_proj_weight_A=self.q_proj_weight_lora_A, k_proj_weight_A=self.k_proj_weight_lora_A, v_proj_weight_A=self.v_proj_weight_lora_A,
                     q_proj_weight_B=self.q_proj_weight_lora_B, k_proj_weight_B=self.k_proj_weight_lora_B, v_proj_weight_B=self.v_proj_weight_lora_B,
                     q_proj_weight_scaling=self.scaling, k_proj_weight_scaling=self.scaling, v_proj_weight_scaling=self.scaling,
-                    only_kv=True
+                    only_kv=True,
+                    delta_w_k=delta_w_k,
+                    delta_w_v=delta_w_v 
                 )
             elif self.mlp:
                 return multi_head_attention_forward(
@@ -733,7 +738,9 @@ def multi_head_attention_forward(query: Tensor,
                                  static_k: Optional[Tensor] = None,
                                  static_v: Optional[Tensor] = None,
                                  only_kv: bool = False,
-                                 mlp: bool = False
+                                 mlp: bool = False,
+                                 delta_w_k: Optional[Tensor] = None,
+                                 delta_w_v: Optional[Tensor] = None
                                  ) -> Tuple[Tensor, Optional[Tensor]]:
     r"""
     Args:
@@ -896,8 +903,10 @@ def multi_head_attention_forward(query: Tensor,
                 v = linear(value, v_proj_weight_non_opt, in_proj_bias)
 
             # q += linear(linear(query, q_proj_weight_non_opt_A), q_proj_weight_non_opt_B) * q_proj_weight_scaling
-            k += linear(linear(key, k_proj_weight_non_opt_A), k_proj_weight_non_opt_B) * k_proj_weight_scaling
-            v += linear(linear(value, v_proj_weight_non_opt_A), v_proj_weight_non_opt_B) * v_proj_weight_scaling
+            # k += linear(linear(key, k_proj_weight_non_opt_A), k_proj_weight_non_opt_B) * k_proj_weight_scaling
+            # v += linear(linear(value, v_proj_weight_non_opt_A), v_proj_weight_non_opt_B) * v_proj_weight_scaling
+            k += linear(key, delta_w_k) * k_proj_weight_scaling
+            v += linear(value, delta_w_v) * v_proj_weight_scaling
 
             pass
         elif mlp:

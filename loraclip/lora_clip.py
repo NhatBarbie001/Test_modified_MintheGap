@@ -99,7 +99,8 @@ def load(name: str,
          jit: bool = False,
          download_root: str = None,
          r: int = 4,
-         lora_mode: str = "vision+text"
+         lora_mode: str = "vision+text",
+         n_tasks: int = 10
     ):
     """Load a CLIP model
 
@@ -148,7 +149,7 @@ def load(name: str,
             state_dict = torch.load(opened_file, map_location="cpu")
 
     if not jit:
-        model = build_LoRA_model(state_dict or model.state_dict(), r, lora_mode).to(device)
+        model = build_LoRA_model(state_dict or model.state_dict(), r, lora_mode, n_tasks = n_tasks).to(device)
         if str(device) == "cpu":
             model.float()
         return model, _transform(model.visual.input_resolution)

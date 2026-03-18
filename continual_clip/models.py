@@ -18,9 +18,9 @@ import numpy as np
 
 
 
-def forward_clip(self, image, text, return_feature=False):
-    image_features = self.encode_image(image)
-    text_features = self.encode_text(text)
+def forward_clip(self, image, text, _cur_task:int=-1, return_feature=False):
+    image_features = self.encode_image(image, _cur_task = _cur_task)
+    text_features = self.encode_text(text, _cur_task=_cur_task)
 
     # normalized features
     image_features = image_features / image_features.norm(dim=1, keepdim=True)
@@ -80,7 +80,7 @@ class ClassIncrementalCLIP(nn.Module):
 
 
         #lora_clip
-        self.model, self.transforms = lora_clip.load(cfg.model_name, device=device, jit=jit, r=cfg.lora_rank, lora_mode=cfg.lora_mode)
+        self.model, self.transforms = lora_clip.load(cfg.model_name, device=device, jit=jit, r=cfg.lora_rank, lora_mode=cfg.lora_mode, n_tasks=cfg.task_num)
         # for name, param in self.model.named_parameters():
         #     if 'adapter_mlp' in name:
         #         param.requires_grad = True
@@ -117,41 +117,41 @@ class ClassIncrementalCLIP(nn.Module):
         logits_per_image = logit_scale * image_features @ text_features.t()
         return logits_per_image
 
-    def forward(self, image, test=False, all_test=False, return_feature=False,replay=None):
+    def forward(self, image, _cur_task :int=-1, test=False, all_test=False, return_feature=False,replay=None):
         if test:
             # pdb.set_trace()
             with torch.no_grad():
                 if all_test:
                     if return_feature:
-                        logits_per_image, _, image_features, __ = self.model(image, self.all_text_tokens, return_feature=return_feature)
+                        logits_per_image, _, image_features, __ = self.model(image, self.all_text_tokens, _cur_task=_cur_task, return_feature=return_feature)
                     else:
-                        logits_per_image, _ = self.model(image, self.all_text_tokens)
+                        logits_per_image, _ = self.model(image, self.all_text_tokens, _cur_task=_cur_task)
                     # logits_per_image = self.inference(image, self.all_text_tokens)
                 else:
                     if return_feature:
-                        logits_per_image, _, image_features, __ = self.model(image, self.text_tokens, return_feature=return_feature)
+                        logits_per_image, _, image_features, __ = self.model(image, self.text_tokens, _cur_task=_cur_task, return_feature=return_feature)
                     else:
-                        logits_per_image, _ = self.model(image, self.text_tokens)
+                        logits_per_image, _ = self.model(image, self.text_tokens, _cur_task=_cur_task)
                 # pdb.set_trace()
                 probs = logits_per_image.softmax(dim=-1)
         else:
 
             if return_feature:
-                __, _, image_features, text_features = self.model(image, self.text_tokens, return_feature=return_feature)
+                __, _, image_features, text_features = self.model(image, self.text_tokens, _cur_task=_cur_task, return_feature=return_feature)
                 return image_features, text_features
             if replay is not None:
-                logits_per_image, _ = self.model(image, self.text_tokens)
+                logits_per_image, _ = self.model(image, self.text_tokens, _cur_task=_cur_task)
                 # text_features_for_replay = self.model.encode_text(self.text_tokens[:-self.cfg.increment])
-                text_features_for_replay = self.model.encode_text(self.text_tokens)
+                text_features_for_replay = self.model.encode_text(self.text_tokens, _cur_task=_cur_task)
                 text_features_for_replay = text_features_for_replay / text_features_for_replay.norm(dim=1, keepdim=True)
                 replay_features = replay / replay.norm(dim=1, keepdim=True)
                 replay_logits = replay_features @ text_features_for_replay.t() * 100
             else:
-                logits_per_image, _ = self.model(image, self.text_tokens)
+                logits_per_image, _ = self.model(image, self.text_tokens, _cur_task=_cur_task)
             probs = logits_per_image
                 
         if return_feature:
-            text_features = self.model.encode_text(self.all_text_tokens)
+            text_features = self.model.encode_text(self.all_text_tokens, _cur_task=_cur_task)
             return probs, image_features, text_features
 
         if replay is not None:

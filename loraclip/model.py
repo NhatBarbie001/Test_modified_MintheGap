@@ -200,10 +200,10 @@ class ResidualAttentionBlock(nn.Module):
 
 # LoRA implementation of ResidualAttentionBlock:
 class LoRAResidualAttentionBlock(nn.Module):
-    def __init__(self, d_model: int, n_head: int, attn_mask: torch.Tensor = None, r=4, only_kv=False,mlp=False):
+    def __init__(self, d_model: int, n_head: int, attn_mask: torch.Tensor = None, r=4, only_kv=False,mlp=False, n_tasks=10):
         super().__init__()
 
-        self.attn = lora.MultiheadAttention(d_model, n_head, r=r, only_kv=only_kv, mlp=mlp) # LoRA rank set as 4
+        self.attn = lora.MultiheadAttention(d_model, n_head, r=r, only_kv=only_kv, mlp=mlp, n_tasks=n_tasks) # LoRA rank set as 4
         self.ln_1 = LayerNorm(d_model)
         if only_kv:
             self.mlp = nn.Sequential(OrderedDict([
@@ -228,12 +228,12 @@ class LoRAResidualAttentionBlock(nn.Module):
         self.ln_2 = LayerNorm(d_model)
         self.attn_mask = attn_mask
 
-    def attention(self, x: torch.Tensor):
+    def attention(self, x: torch.Tensor, cur_task:int=-1):
         self.attn_mask = self.attn_mask.to(dtype=x.dtype, device=x.device) if self.attn_mask is not None else None
-        return self.attn(x, x, x, need_weights=False, attn_mask=self.attn_mask)[0]
+        return self.attn(x, x, x, need_weights=False, attn_mask=self.attn_mask, _cur_task=cur_task)[0]
 
-    def forward(self, x: torch.Tensor):
-        x = x + self.attention(self.ln_1(x))
+    def forward(self, x: torch.Tensor, _cur_task:int=-1):
+        x = x + self.attention(self.ln_1(x), cur_task=_cur_task)
         if self.mlp_flag:
             x = x + self.adapter_mlp(self.ln_2(x)) + self.mlp(self.ln_2(x))
         else:
@@ -247,25 +247,24 @@ class Transformer(nn.Module):
         self.width = width
         self.layers = layers
         self.resblocks = nn.Sequential(*[ResidualAttentionBlock(width, heads, attn_mask) for _ in range(layers)])
+
     def forward(self, x: torch.Tensor):
-        
         return self.resblocks(x)
 
 
 # LoRA implementation of Transformer:
 class LoRATransformer(nn.Module):
-    def __init__(self, width: int, layers: int, heads: int, attn_mask: torch.Tensor = None, r = 4, only_kv=False,mlp=False):
+    def __init__(self, width: int, layers: int, heads: int, attn_mask: torch.Tensor = None, r = 4, only_kv=False,mlp=False, n_tasks=10):
         super().__init__()
         self.width = width
         self.layers = layers
         #self.resblocks = nn.Sequential(*[LoRAResidualAttentionBlock(width, heads, attn_mask, r=r, only_kv=only_kv, mlp=mlp) for _ in range(layers)])
-        self.resblocks = nn.ModuleList([ LoRAResidualAttentionBlock(width, heads, attn_mask, r=r, only_kv=only_kv, mlp=mlp) for _ in range(layers) ])
-    def forward(self, x: torch.Tensor):
+        self.resblocks = nn.ModuleList([ LoRAResidualAttentionBlock(width, heads, attn_mask, r=r, only_kv=only_kv, mlp=mlp, n_tasks=n_tasks) for _ in range(layers) ])
+    def forward(self, x: torch.Tensor, _cur_task:int=-1):
         for block in self.resblocks: 
-            x = block(x) 
+            x = block(x, _cur_task=_cur_task) 
         return x
-        return self.resblocks(x)
-
+        #return self.resblocks(x)
 
 class VisionTransformer(nn.Module):
     def __init__(self, input_resolution: int, patch_size: int, width: int, layers: int, heads: int, output_dim: int):
@@ -305,7 +304,7 @@ class VisionTransformer(nn.Module):
 
 
 class LoRAVisionTransformer(nn.Module):
-    def __init__(self, input_resolution: int, patch_size: int, width: int, layers: int, heads: int, output_dim: int, r: int, only_kv=False, mlp=False):
+    def __init__(self, input_resolution: int, patch_size: int, width: int, layers: int, heads: int, output_dim: int, r: int, only_kv=False, mlp=False, n_tasks=10):
         super().__init__()
         self.input_resolution = input_resolution
         self.output_dim = output_dim
@@ -319,13 +318,13 @@ class LoRAVisionTransformer(nn.Module):
         self.positional_embedding = nn.Parameter(scale * torch.randn((input_resolution // patch_size) ** 2 + 1, width))
         self.ln_pre = LayerNorm(width)
 
-        self.transformer = LoRATransformer(width, layers, heads, only_kv=only_kv, r=r, mlp=mlp)
+        self.transformer = LoRATransformer(width, layers, heads, only_kv=only_kv, r=r, mlp=mlp, n_tasks=n_tasks)
         # self.transformer = Transformer(width, layers, heads)
 
         self.ln_post = LayerNorm(width)
         self.proj = nn.Parameter(scale * torch.randn(width, output_dim))
 
-    def forward(self, x: torch.Tensor):
+    def forward(self, x: torch.Tensor, _cur_task:int=-1):
         x = self.conv1(x)  # shape = [*, width, grid, grid]
         x = x.reshape(x.shape[0], x.shape[1], -1)  # shape = [*, width, grid ** 2]
         x = x.permute(0, 2, 1)  # shape = [*, grid ** 2, width]
@@ -333,8 +332,8 @@ class LoRAVisionTransformer(nn.Module):
         x = x + self.positional_embedding.to(x.dtype)
         x = self.ln_pre(x)
 
-        x = x.permute(1, 0, 2)  # NLD -> LND
-        x = self.transformer(x)
+        x = x.permute(1, 0, 2)  # NLD -> LND    
+        x = self.transformer(x, _cur_task=_cur_task)
         x = x.permute(1, 0, 2)  # LND -> NLD
 
         x = self.ln_post(x[:, 0, :])
@@ -492,7 +491,8 @@ class LoRACLIP(nn.Module):
                  transformer_heads: int,
                  transformer_layers: int,
                  r: int,
-                 lora_mode: str
+                 lora_mode: str,
+                 n_tasks: int
                  ):
         super().__init__()
 
@@ -511,6 +511,7 @@ class LoRACLIP(nn.Module):
             vision_heads = vision_width // 64
             
             if "vision" in lora_mode:
+                print("=========== creating LoRA Vision Transformer==========")
                 self.visual = LoRAVisionTransformer(
                     input_resolution=image_resolution,
                     patch_size=vision_patch_size,
@@ -521,6 +522,7 @@ class LoRACLIP(nn.Module):
                     r=r,
                     only_kv=("only_kv" in lora_mode),
                     mlp="mlp" in lora_mode,
+                    n_tasks = n_tasks
                 )
             else:
                 self.visual = VisionTransformer(
@@ -533,6 +535,7 @@ class LoRACLIP(nn.Module):
                 )
 
         if "text" in lora_mode:
+            print("=========== creating LoRA Text Transformer==========")
             self.transformer = LoRATransformer(
                 width=transformer_width,
                 layers=transformer_layers,
@@ -615,10 +618,10 @@ class LoRACLIP(nn.Module):
     def dtype(self):
         return self.visual.conv1.weight.dtype
 
-    def encode_image(self, image):
+    def encode_image(self, image, _cur_task:int=-1):
         return self.visual(image.type(self.dtype))
 
-    def encode_text(self, text):
+    def encode_text(self, text, _cur_task:int=-1):
         x = self.token_embedding(text).type(self.dtype)  # [batch_size, n_ctx, d_model]
 
         x = x + self.positional_embedding.type(self.dtype)
@@ -634,9 +637,9 @@ class LoRACLIP(nn.Module):
         x = self.lora_text_projection(x)
         return x
 
-    def forward(self, image, text):
-        image_features = self.encode_image(image)
-        text_features = self.encode_text(text)
+    def forward(self, image, text, _cur_task:int=-1):
+        image_features = self.encode_image(image, _cur_task=_cur_task)
+        text_features = self.encode_text(text, _cur_task=_cur_task)
 
         # normalized features
         image_features = image_features / image_features.norm(dim=1, keepdim=True)
@@ -736,7 +739,7 @@ def build_model(state_dict: dict):
     model.load_state_dict(state_dict)
     return model.eval()
 
-def build_LoRA_model(state_dict: dict, r: int, lora_mode: str):
+def build_LoRA_model(state_dict: dict, r: int, lora_mode: str, n_tasks: int):
     vit = "visual.proj" in state_dict
 
     if vit:
@@ -779,7 +782,8 @@ def build_LoRA_model(state_dict: dict, r: int, lora_mode: str):
         embed_dim,
         image_resolution, vision_layers, vision_width, vision_patch_size,
         context_length, vocab_size, transformer_width, transformer_heads, transformer_layers, 
-        r, lora_mode
+        r, lora_mode,
+        n_tasks = n_tasks
     )
 
     for key in ["input_resolution", "context_length", "vocab_size"]:
