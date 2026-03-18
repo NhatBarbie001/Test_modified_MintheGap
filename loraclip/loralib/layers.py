@@ -932,8 +932,8 @@ def multi_head_attention_forward(self,
             k += linear(key, self.get_delta_w_k(_cur_task)) * k_proj_weight_scaling
             v += linear(value, self.get_delta_w_v(_cur_task)) * v_proj_weight_scaling
             # Kiểm tra k và v có mang theo grad_fn không
-            print(f"DEBUG: k.grad_fn = {k.grad_fn}")
-            print(f"DEBUG: v.grad_fn = {v.grad_fn}")
+            # print(f"DEBUG: k.grad_fn = {k.grad_fn}")
+            # print(f"DEBUG: v.grad_fn = {v.grad_fn}")
 
             # # Kiểm tra riêng thành phần FFT
             # delta_k_out = linear(key, delta_w_k)
