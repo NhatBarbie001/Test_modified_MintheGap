@@ -237,10 +237,10 @@ def run_class_incremental(cfg, device):
             # optimizer = torch.optim.SGD(params, lr=cfg.lr, momentum=cfg.momentum, weight_decay=cfg.weight_decay)  
             scheduler = torch.optim.lr_scheduler.CosineAnnealingLR(optimizer, epochs, eta_min=cfg.lr*0.01)   
 
-            # ===============================
-            for name, param in model.named_parameters():
-                if param.requires_grad:
-                    print(name)
+        # # =============================== debug ===============================
+        # for name, param in model.named_parameters():
+        #     if param.requires_grad:
+        #         print(name)
         torch.cuda.empty_cache()
         for i_epoch in range(epochs):
 
@@ -275,7 +275,17 @@ def run_class_incremental(cfg, device):
                 # for name, p in model.named_parameters():
                 #     if p.requires_grad:
                 #         print(f"Param training: {name}")
-                        
+                print("=== DEBUG ===")
+                print("loss.requires_grad:", loss.requires_grad)
+                print("outputs.requires_grad:", outputs.requires_grad)
+
+                trainable = []
+                for name, p in model.named_parameters():
+                    if p.requires_grad:
+                        trainable.append(name)
+
+                print("Trainable params:", len(trainable))
+                print(trainable[:10])
                 loss.backward()
                 optimizer.step()
                 if bach_i % 10 == 0:
