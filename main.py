@@ -112,41 +112,23 @@ def run_class_incremental(cfg, device):
         )
 
     # for name, param in model.named_parameters():
-    #         # param.requires_grad_(False)
+    #         param.requires_grad_(False)
     #         try:
     #             for task_id in range(cfg.task_num):
     #                 if "classifier_pool" + "." + str(task_id) in name:
-    #                     param.requires_grad_(False)
+    #                     param.requires_grad_(True)
     #                 if "coef_k" + "." + str(task_id) in name:
-    #                     param.requires_grad_(False)
+    #                     param.requires_grad_(True)
     #                 if "coef_v" + "." + str(task_id) in name:
-    #                     param.requires_grad_(False)
+    #                     param.requires_grad_(True)
     #         except:
     #             for task_id in range(cfg.task_num):
     #                 if "classifier_pool" + "." + str(task_id) in name:
-    #                     param.requires_grad_(False)
+    #                     param.requires_grad_(True)
     #                 if "coef_k" + "." + str(task_id) in name:
-    #                     param.requires_grad_(False)
+    #                     param.requires_grad_(True)
     #                 if "coef_v" + "." + str(task_id) in name:
-    #                     param.requires_grad_(False)
-    for name, param in model.named_parameters():
-            param.requires_grad_(False)
-            try:
-                for task_id in range(cfg.task_num):
-                    if "classifier_pool" + "." + str(task_id) in name:
-                        param.requires_grad_(True)
-                    if "coef_k" + "." + str(task_id) in name:
-                        param.requires_grad_(True)
-                    if "coef_v" + "." + str(task_id) in name:
-                        param.requires_grad_(True)
-            except:
-                for task_id in range(cfg.task_num):
-                    if "classifier_pool" + "." + str(task_id) in name:
-                        param.requires_grad_(True)
-                    if "coef_k" + "." + str(task_id) in name:
-                        param.requires_grad_(True)
-                    if "coef_v" + "." + str(task_id) in name:
-                        param.requires_grad_(True)
+    #                     param.requires_grad_(True)
     for task_id, _ in enumerate(eval_dataset):
 
         # negative_records = 0
@@ -166,24 +148,24 @@ def run_class_incremental(cfg, device):
 
         trainable_params = torch.load(f'ori_params.pth')
         model.load_state_dict(trainable_params, strict=False)
-        # for name, param in model.named_parameters():
-        #     param.requires_grad_(False)
-        #     try:
-        #         # for task_id in range(cfg.task_num):
-        #             if "classifier_pool" + "." + str(task_id) in name:
-        #                 param.requires_grad_(True)
-        #             if "coef_k" + "." + str(task_id) in name:
-        #                 param.requires_grad_(True)
-        #             if "coef_v" + "." + str(task_id) in name:
-        #                 param.requires_grad_(True)
-        #     except:
-        #         # for task_id in range(cfg.task_num):
-        #             if "classifier_pool" + "." + str(task_id) in name:
-        #                 param.requires_grad_(True)
-        #             if "coef_k" + "." + str(task_id) in name:
-        #                 param.requires_grad_(True)
-        #             if "coef_v" + "." + str(task_id) in name:
-        #                 param.requires_grad_(True)
+        for name, param in model.named_parameters():
+            # param.requires_grad_(False)
+            try:
+                # for task_id in range(cfg.task_num):
+                    if "classifier_pool" + "." + str(task_id) in name:
+                        param.requires_grad_(True)
+                    if "coef_k" + "." + str(task_id) in name:
+                        param.requires_grad_(True)
+                    if "coef_v" + "." + str(task_id) in name:
+                        param.requires_grad_(True)
+            except:
+                # for task_id in range(cfg.task_num):
+                    if "classifier_pool" + "." + str(task_id) in name:
+                        param.requires_grad_(True)
+                    if "coef_k" + "." + str(task_id) in name:
+                        param.requires_grad_(True)
+                    if "coef_v" + "." + str(task_id) in name:
+                        param.requires_grad_(True)
 
         # 计算未经训练时正类别和负类别的输出平均值
         model.eval()  # 切换到评估模式
