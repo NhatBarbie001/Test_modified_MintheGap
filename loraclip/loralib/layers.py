@@ -483,7 +483,7 @@ class MultiheadAttention(nn.Module):
         self.coef_v = nn.ParameterList([
         nn.Parameter(torch.randn(self.n_frq, generator=g_cuda, device=self.device), requires_grad=True)
         for _ in range(n_tasks)
-        ], requires_grad=True)
+        ])
 
         self.indices = [
         self.select_pos(t, self.embed_dim, generator=g_cpu).to(self.device)
