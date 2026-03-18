@@ -822,7 +822,7 @@ def build_LoRA_model(state_dict: dict, r: int, lora_mode: str, n_tasks: int):
     #         print(name)
     # Enable training of FFT-adaptation params (coef_k/coef_v) only if explicitly requested.
     # Usage: include "+fft" in lora_mode, e.g. "vision+only_kv+text+fft".
-    lora_utils.mark_only_lora_as_trainable(model, train_fft=("fft" in lora_mode))
+    lora_utils.mark_only_lora_as_trainable(model)
     # 冻结text_proj 以及位置编码等
     ##---------------------------------------------------------
     ##
