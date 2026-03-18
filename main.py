@@ -131,6 +131,17 @@ def run_class_incremental(cfg, device):
         # 将model的参数保存
         trainable_params = {k: v for k, v in  model.named_parameters() if v.requires_grad}
         torch.save(trainable_params, f'trainable_params.pth')
+        # --- DEBUG: In ra các tham số trainable ---
+        logging.info("="*30)
+        logging.info(f"LIST OF----- Incremental parameters: task {task_id}----- TRAINABLE PARAMETERS:")
+        trainable_params_count = 0
+        for name, param in model.named_parameters():
+            if param.requires_grad:
+                logging.info(f"Layer: {name:50} | Shape: {str(param.shape):30} | Size: {param.numel():,}")
+                trainable_params_count += param.numel()
+        logging.info(f"Total Trainable Params: {trainable_params_count:,}")
+        logging.info("="*30)
+    # ------------------------------------------
 
         trainable_params = torch.load(f'ori_params.pth')
         model.load_state_dict(trainable_params, strict=False)
