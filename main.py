@@ -132,6 +132,22 @@ def run_class_incremental(cfg, device):
     for task_id, _ in enumerate(eval_dataset):
 
         # negative_records = 0
+        
+        torch.cuda.empty_cache()
+        if task_id == 0:
+            targets_bais = 0
+        else:
+            targets_bais = cfg.initial_increment + (task_id - 1) * cfg.increment
+        
+        logging.info(f"Evaluation for task {task_id} has started.")
+        model.adaptation(task_id, reset=cfg.reset)
+
+        # 将model的参数保存
+        trainable_params = {k: v for k, v in  model.named_parameters() if v.requires_grad}
+        torch.save(trainable_params, f'trainable_params.pth')
+
+        trainable_params = torch.load(f'ori_params.pth')
+        model.load_state_dict(trainable_params, strict=False)
         for name, param in model.named_parameters():
             param.requires_grad_(False)
             try:
@@ -150,21 +166,6 @@ def run_class_incremental(cfg, device):
                         param.requires_grad_(True)
                     if "coef_v" + "." + str(task_id) in name:
                         param.requires_grad_(True)
-        torch.cuda.empty_cache()
-        if task_id == 0:
-            targets_bais = 0
-        else:
-            targets_bais = cfg.initial_increment + (task_id - 1) * cfg.increment
-        
-        logging.info(f"Evaluation for task {task_id} has started.")
-        model.adaptation(task_id, reset=cfg.reset)
-
-        # 将model的参数保存
-        trainable_params = {k: v for k, v in  model.named_parameters() if v.requires_grad}
-        torch.save(trainable_params, f'trainable_params.pth')
-
-        trainable_params = torch.load(f'ori_params.pth')
-        model.load_state_dict(trainable_params, strict=False)
 
         # 计算未经训练时正类别和负类别的输出平均值
         model.eval()  # 切换到评估模式
