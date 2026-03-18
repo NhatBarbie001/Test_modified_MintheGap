@@ -12,9 +12,16 @@ from typing import Dict
 from .layers import LoRALayer
 
 
-def mark_only_lora_as_trainable(model: nn.Module, bias: str = 'none') -> None:
+def mark_only_lora_as_trainable(model: nn.Module, bias: str = 'none', train_fft: bool = False) -> None:
+    """
+    Freeze everything except LoRA parameters.
+
+    If train_fft=True, also keep FFT-adaptation parameters (coef_k/coef_v) trainable.
+    """
     for n, p in model.named_parameters():
-        if 'lora_' not in n or 'coef' not in n:
+        is_lora = 'lora_' in n
+        is_fft = train_fft and ('coef_k' in n or 'coef_v' in n)
+        if not (is_lora or is_fft):
             p.requires_grad = False
         #     print(f'Freezing {n}')
         # else:
