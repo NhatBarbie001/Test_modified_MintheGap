@@ -530,14 +530,27 @@ class MultiheadAttention(nn.Module):
         delta_w = torch.fft.ifft2(F, dim=(-2,-1)).real
         return delta_w * alpha
     
-    def get_delta_w_v(self, task, alpha=300):
-        device = self.coef_v[task].device
+    # def get_delta_w_v(self, task, alpha=300):
+    #     device = self.coef_v[task].device
 
-        indices = self.indices[task]
-        # F = torch.zeros(self.dim, self.dim).to(self.qkv.weight.device)
-        F = torch.zeros(self.embed_dim, self.embed_dim).to(device)
-        F[indices[0,:], indices[1,:]] =  self.coef_v[task]
-        return torch.fft.ifft2(F, dim=(-2,-1)).real * alpha
+    #     indices = self.indices[task]
+    #     # F = torch.zeros(self.dim, self.dim).to(self.qkv.weight.device)
+    #     F = torch.zeros(self.embed_dim, self.embed_dim).to(device)
+    #     F[indices[0,:], indices[1,:]] =  self.coef_v[task]
+    #     return torch.fft.ifft2(F, dim=(-2,-1)).real * 
+    def get_delta_w_v(self, task, alpha=300):
+        coef = self.coef_v[task] # Lấy tham số thực sự
+        device = coef.device
+
+        # LỖI CŨ: F = torch.zeros(...).to(device) -> Tạo tensor mới rồi chuyển device làm mất grad_fn
+        # SỬA THÀNH: Khởi tạo trực tiếp trên device với dtype của coef
+        F = torch.zeros(self.embed_dim, self.embed_dim, device=device, dtype=coef.dtype)
+
+        # Phép gán này trên tensor F (đã đúng device/dtype) sẽ giữ được liên kết với coef
+        F[self.indices[task][0], self.indices[task][1]] = coef
+
+        delta_w = torch.fft.ifft2(F, dim=(-2,-1)).real
+        return delta_w * alpha
     #================================================================
 
     def _reset_parameters(self):
@@ -916,6 +929,13 @@ def multi_head_attention_forward(query: Tensor,
             # v += linear(linear(value, v_proj_weight_non_opt_A), v_proj_weight_non_opt_B) * v_proj_weight_scaling
             k += linear(key, delta_w_k) * k_proj_weight_scaling
             v += linear(value, delta_w_v) * v_proj_weight_scaling
+            # Kiểm tra k và v có mang theo grad_fn không
+            print(f"DEBUG: k.grad_fn = {k.grad_fn}")
+            print(f"DEBUG: v.grad_fn = {v.grad_fn}")
+
+            # Kiểm tra riêng thành phần FFT
+            delta_k_out = linear(key, delta_w_k)
+            print(f"DEBUG: delta_k_out.grad_fn = {delta_k_out.grad_fn}")
 
             pass
         elif mlp:
