@@ -462,12 +462,12 @@ class MultiheadAttention(nn.Module):
 
         self.add_zero_attn = add_zero_attn
         #--------------FFT heree----------------
-        self.n_frq = n_frq
-        self.device = device
-        self.coef_k = nn.ParameterList([nn.Parameter(torch.randn(self.n_frq), requires_grad=True) for _ in range(n_tasks)]).to(self.device)
-        self.coef_v = nn.ParameterList([nn.Parameter(torch.randn(self.n_frq), requires_grad=True) for _ in range(n_tasks)]).to(self.device)
-        self.indices = [self.select_pos(t, self.embed_dim).to(self.device) for t in range(n_tasks)]
-        self.init_param()
+        # self.n_frq = n_frq
+        # self.device = device
+        # self.coef_k = nn.ParameterList([nn.Parameter(torch.randn(self.n_frq), requires_grad=True) for _ in range(n_tasks)]).to(self.device)
+        # self.coef_v = nn.ParameterList([nn.Parameter(torch.randn(self.n_frq), requires_grad=True) for _ in range(n_tasks)]).to(self.device)
+        # self.indices = [self.select_pos(t, self.embed_dim).to(self.device) for t in range(n_tasks)]
+        # self.init_param()
         #---------------------------------------
 
 
