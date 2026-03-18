@@ -268,10 +268,10 @@ def run_class_incremental(cfg, device):
                     loss_c = torch.nn.functional.cross_entropy(outputs, targets) 
                 loss += loss_c
                 optimizer.zero_grad()
-                print(f"Loss requires_grad: {loss.requires_grad}")
-                for name, p in model.named_parameters():
-                    if p.requires_grad:
-                        print(f"Param training: {name}")
+                # print(f"Loss requires_grad: {loss.requires_grad}")
+                # for name, p in model.named_parameters():
+                #     if p.requires_grad:
+                #         print(f"Param training: {name}")
                         
                 loss.backward()
                 optimizer.step()
