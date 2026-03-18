@@ -112,23 +112,23 @@ def run_class_incremental(cfg, device):
         )
 
     for name, param in model.named_parameters():
-            param.requires_grad_(False)
+            # param.requires_grad_(False)
             try:
                 for task_id in range(cfg.task_num):
                     if "classifier_pool" + "." + str(task_id) in name:
-                        param.requires_grad_(True)
+                        param.requires_grad_(False)
                     if "coef_k" + "." + str(task_id) in name:
-                        param.requires_grad_(True)
+                        param.requires_grad_(False)
                     if "coef_v" + "." + str(task_id) in name:
-                        param.requires_grad_(True)
+                        param.requires_grad_(False)
             except:
                 for task_id in range(cfg.task_num):
                     if "classifier_pool" + "." + str(task_id) in name:
-                        param.requires_grad_(True)
+                        param.requires_grad_(False)
                     if "coef_k" + "." + str(task_id) in name:
-                        param.requires_grad_(True)
+                        param.requires_grad_(False)
                     if "coef_v" + "." + str(task_id) in name:
-                        param.requires_grad_(True)
+                        param.requires_grad_(False)
     for task_id, _ in enumerate(eval_dataset):
 
         # negative_records = 0
