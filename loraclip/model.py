@@ -246,13 +246,10 @@ class Transformer(nn.Module):
         super().__init__()
         self.width = width
         self.layers = layers
-        #self.resblocks = nn.Sequential(*[ResidualAttentionBlock(width, heads, attn_mask) for _ in range(layers)])
-        self.resblocks = nn.ModuleList([ LoRAResidualAttentionBlock(width, heads, attn_mask) for _ in range(layers) ])
+        self.resblocks = nn.Sequential(*[ResidualAttentionBlock(width, heads, attn_mask) for _ in range(layers)])
     def forward(self, x: torch.Tensor):
-        for block in self.resblocks: 
-            x = block(x) 
-        return x
-        #return self.resblocks(x)
+        
+        return self.resblocks(x)
 
 
 # LoRA implementation of Transformer:
@@ -261,9 +258,12 @@ class LoRATransformer(nn.Module):
         super().__init__()
         self.width = width
         self.layers = layers
-        self.resblocks = nn.Sequential(*[LoRAResidualAttentionBlock(width, heads, attn_mask, r=r, only_kv=only_kv, mlp=mlp) for _ in range(layers)])
-
+        #self.resblocks = nn.Sequential(*[LoRAResidualAttentionBlock(width, heads, attn_mask, r=r, only_kv=only_kv, mlp=mlp) for _ in range(layers)])
+        self.resblocks = nn.ModuleList([ LoRAResidualAttentionBlock(width, heads, attn_mask, r=r, only_kv=only_kv, mlp=mlp) for _ in range(layers) ])
     def forward(self, x: torch.Tensor):
+        for block in self.resblocks: 
+            x = block(x) 
+        return x
         return self.resblocks(x)
 
 
