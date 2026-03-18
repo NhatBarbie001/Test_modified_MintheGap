@@ -148,41 +148,7 @@ def run_class_incremental(cfg, device):
 
         trainable_params = torch.load(f'ori_params.pth')
         model.load_state_dict(trainable_params, strict=False)
-        for name, param in model.named_parameters():
-            # param.requires_grad_(False)
-            try:
-                for task_ in range(cfg.task_num):
-                    if(task_ == task_id):
-                        if "classifier_pool" + "." + str(task_) in name:
-                            param.requires_grad_(True)
-                        if "coef_k" + "." + str(task_) in name:
-                            param.requires_grad_(True)
-                        if "coef_v" + "." + str(task_) in name:
-                            param.requires_grad_(True)
-                    else:
-                        if "classifier_pool" + "." + str(task_) in name:
-                            param.requires_grad_(False)
-                        if "coef_k" + "." + str(task_) in name:
-                            param.requires_grad_(False)
-                        if "coef_v" + "." + str(task_) in name:
-                            param.requires_grad_(False)
-
-            except:
-                for task_ in range(cfg.task_num):
-                    if(task_ == task_id):
-                        if "classifier_pool" + "." + str(task_) in name:
-                            param.requires_grad_(True)
-                        if "coef_k" + "." + str(task_) in name:
-                            param.requires_grad_(True)
-                        if "coef_v" + "." + str(task_) in name:
-                            param.requires_grad_(True)
-                    else:
-                        if "classifier_pool" + "." + str(task_) in name:
-                            param.requires_grad_(False)
-                        if "coef_k" + "." + str(task_) in name:
-                            param.requires_grad_(False)
-                        if "coef_v" + "." + str(task_) in name:
-                            param.requires_grad_(False)
+        
         
         # 计算未经训练时正类别和负类别的输出平均值
         model.eval()  # 切换到评估模式
@@ -218,6 +184,41 @@ def run_class_incremental(cfg, device):
         model.load_state_dict(trainable_params, strict=False)
 
         model.train()
+        for name, param in model.named_parameters():
+            # param.requires_grad_(False)
+            try:
+                for task_ in range(cfg.task_num):
+                    if(task_ == task_id):
+                        if "classifier_pool" + "." + str(task_) in name:
+                            param.requires_grad_(True)
+                        if "coef_k" + "." + str(task_) in name:
+                            param.requires_grad_(True)
+                        if "coef_v" + "." + str(task_) in name:
+                            param.requires_grad_(True)
+                    else:
+                        if "classifier_pool" + "." + str(task_) in name:
+                            param.requires_grad_(False)
+                        if "coef_k" + "." + str(task_) in name:
+                            param.requires_grad_(False)
+                        if "coef_v" + "." + str(task_) in name:
+                            param.requires_grad_(False)
+
+            except:
+                for task_ in range(cfg.task_num):
+                    if(task_ == task_id):
+                        if "classifier_pool" + "." + str(task_) in name:
+                            param.requires_grad_(True)
+                        if "coef_k" + "." + str(task_) in name:
+                            param.requires_grad_(True)
+                        if "coef_v" + "." + str(task_) in name:
+                            param.requires_grad_(True)
+                    else:
+                        if "classifier_pool" + "." + str(task_) in name:
+                            param.requires_grad_(False)
+                        if "coef_k" + "." + str(task_) in name:
+                            param.requires_grad_(False)
+                        if "coef_v" + "." + str(task_) in name:
+                            param.requires_grad_(False)
         if task_id > 0 and cfg.real_replay:
             mem_x, mem_y, mem_t = memory.get()
             t_data = train_dataset[task_id]
@@ -235,9 +236,11 @@ def run_class_incremental(cfg, device):
             optimizer = torch.optim.Adam(params, lr=cfg.lr) 
             # optimizer = torch.optim.SGD(params, lr=cfg.lr, momentum=cfg.momentum, weight_decay=cfg.weight_decay)  
             scheduler = torch.optim.lr_scheduler.CosineAnnealingLR(optimizer, epochs, eta_min=cfg.lr*0.01)   
-            # for name, param in model.named_parameters():
-            #     if param.requires_grad:
-            #         print(name)
+
+            # ===============================
+            for name, param in model.named_parameters():
+                if param.requires_grad:
+                    print(name)
         torch.cuda.empty_cache()
         for i_epoch in range(epochs):
 
