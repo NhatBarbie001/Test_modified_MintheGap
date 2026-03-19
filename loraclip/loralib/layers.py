@@ -538,63 +538,26 @@ class MultiheadAttention(nn.Module):
     
 
     def get_delta_w_k(self, task, alpha=300):
+        
         coef = self.coef_k[task]
         device = coef.device
-
-        F = torch.zeros(self.embed_dim, self.embed_dim, device=device, dtype=coef.dtype)
-
         indices = self.indices[task]
-        F = F.index_put(
-            (indices[0], indices[1]),
-            coef
-        )
+        F = torch.zeros(self.embed_dim, self.embed_dim).to(device)
+        F[indices[0,:], indices[1,:]] =  self.coef_k[task]
+        return torch.fft.ifft2(F, dim=(-2,-1)).real * alpha
 
-        delta_w = torch.fft.ifft2(F, dim=(-2, -1)).real
-        return delta_w * alpha
-    
-    # def get_delta_w_v(self, task, alpha=300):
-    #     device = self.coef_v[task].device
-
-    #     indices = self.indices[task]
-    #     # F = torch.zeros(self.dim, self.dim).to(self.qkv.weight.device)
-    #     F = torch.zeros(self.embed_dim, self.embed_dim).to(device)
-    #     F[indices[0,:], indices[1,:]] =  self.coef_v[task]
-    #     return torch.fft.ifft2(F, dim=(-2,-1)).real * 
     def get_delta_w_v(self, task, alpha=300):
         coef = self.coef_v[task]
         device = coef.device
 
-        F = torch.zeros(self.embed_dim, self.embed_dim, device=device, dtype=coef.dtype)
-
+        F = torch.zeros(self.embed_dim, self.embed_dim).to(device)
         indices = self.indices[task]
-        F = F.index_put(
-            (indices[0], indices[1]),
-            coef
-        )
+        F[indices[0,:], indices[1,:]] =  self.coef_v[task]
 
         delta_w = torch.fft.ifft2(F, dim=(-2, -1)).real
-        return delta_w * alpha
+        return torch.fft.ifft2(F, dim=(-2,-1)).real * alpha
 
-    def _get_fft_delta_cached(self, task: int, kind: str, dtype: torch.dtype, device: torch.device):
-        """
-        Cache FFT deltas for eval only (training updates coef every step).
-        kind: "k" or "v"
-        """
-        key = (task, kind, dtype, str(device))
-        if self.fft_cache_eval and (not self.training):
-            cached = self._fft_delta_cache.get(key)
-            if cached is not None:
-                return cached
-
-        if kind == "k":
-            delta = self.get_delta_w_k(task, alpha=self.fft_alpha)
-        else:
-            delta = self.get_delta_w_v(task, alpha=self.fft_alpha)
-
-        delta = delta.to(device=device, dtype=dtype)
-        if self.fft_cache_eval and (not self.training):
-            self._fft_delta_cache[key] = delta
-        return delta
+    # 
     #================================================================
 
     def _reset_parameters(self):
@@ -921,11 +884,10 @@ class MultiheadAttention(nn.Module):
                 # v += linear(linear(value, v_proj_weight_non_opt_A), v_proj_weight_non_opt_B) * v_proj_weight_scaling
                 #
                 # Optional FFT-based task adaptation (task-specific delta weights).
-                if self.fft_adapt and _cur_task is not None and _cur_task >= 0:
-                    delta_w_k = self._get_fft_delta_cached(_cur_task, kind="k", dtype=key.dtype, device=key.device)
-                    delta_w_v = self._get_fft_delta_cached(_cur_task, kind="v", dtype=value.dtype, device=value.device)
-                    k = k + linear(key, delta_w_k) * k_proj_weight_scaling
-                    v = v + linear(value, delta_w_v) * v_proj_weight_scaling
+                # if self.fft_adapt and _cur_task is not None and _cur_task >= 0:
+                
+                k = k + linear(key, get_delta_w_k(_cur_task)) * k_proj_weight_scaling
+                v = v + linear(value, get_delta_w_v(_cur_task)) * v_proj_weight_scaling
                 # # Kiểm tra k và v có mang theo grad_fn không
                 # print(f"DEBUG: k.grad_fn = {k.grad_fn}")
                 # print(f"DEBUG: v.grad_fn = {v.grad_fn}")
