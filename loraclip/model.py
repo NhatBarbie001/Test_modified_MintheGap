@@ -530,8 +530,7 @@ class LoRACLIP(nn.Module):
                     r=r,
                     only_kv=("only_kv" in lora_mode),
                     mlp="mlp" in lora_mode,
-                    n_tasks = n_tasks,
-                    fft_adapt=("fft" in lora_mode)
+                    n_tasks = n_tasks
                 )
             else:
                 self.visual = VisionTransformer(
@@ -553,8 +552,7 @@ class LoRACLIP(nn.Module):
                 r = r,
                 only_kv=("only_kv" in lora_mode),
                 mlp="mlp" in lora_mode,
-                n_tasks=n_tasks,
-                fft_adapt=("fft" in lora_mode),
+                n_tasks=n_tasks
             )
         
         else:
@@ -630,14 +628,16 @@ class LoRACLIP(nn.Module):
         return self.visual.conv1.weight.dtype
 
     def encode_image(self, image, _cur_task:int=-1):
-        return self.visual(image.type(self.dtype))
+        print(f"DEBUG: encode_image on LoRACLIP on model.py=================_cur_task:{_cur_task}=================")
+        return self.visual(image.type(self.dtype), _cur_task=_cur_task)
 
     def encode_text(self, text, _cur_task:int=-1):
+        print(f"DEBUG: encode_text on LoRACLIP on model.py=================_cur_task:{_cur_task}=================")
         x = self.token_embedding(text).type(self.dtype)  # [batch_size, n_ctx, d_model]
 
         x = x + self.positional_embedding.type(self.dtype)
         x = x.permute(1, 0, 2)  # NLD -> LND
-        x = self.transformer(x)
+        x = self.transformer(x, _cur_task=_cur_task)
         x = x.permute(1, 0, 2)  # LND -> NLD
         x = self.ln_final(x).type(self.dtype)
 
