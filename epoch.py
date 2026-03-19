@@ -28,6 +28,7 @@ try:
     BICUBIC = InterpolationMode.BICUBIC
 except ImportError:
     BICUBIC = Image.BICUBIC
+from loraclip.loralib.layers import MultiheadAttention
 
 def intra_cls(logits, y, classes):
     y = y - classes
