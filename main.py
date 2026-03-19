@@ -258,27 +258,27 @@ def run_class_incremental(cfg, device):
 
                 
 
-            torch.cuda.empty_cache()
-            positive_outputs = []
-            negative_outputs = []
-            with torch.no_grad():
-                model.eval()
-                for inputs, targets, t in val_gap_loader:
-                    inputs, targets = inputs.to(device), targets.to(device)
-                    outputs = model(inputs, _cur_task=task_id)
-                    # pdb.set_trace()
-                    one_hot_targets = torch.nn.functional.one_hot(targets, outputs.shape[1]).float()
-                    positive_outputs.append((outputs * one_hot_targets).sum(dim=1).mean())
-                    mask = 1 - one_hot_targets
-                    negative_outputs.append(((outputs * mask).sum(dim=1) / mask.sum(dim=1)).mean())
-                model.train()
-            positive_mean = sum(positive_outputs) / len(positive_outputs)
-            negative_mean = sum(negative_outputs) / len(negative_outputs)
-            all_mean = (sum(positive_outputs)+ sum(positive_outputs))/ (len(positive_outputs)+len(negative_outputs))
+            # torch.cuda.empty_cache()
+            # positive_outputs = []
+            # negative_outputs = []
+            # with torch.no_grad():
+            #     model.eval()
+            #     for inputs, targets, t in val_gap_loader:
+            #         inputs, targets = inputs.to(device), targets.to(device)
+            #         outputs = model(inputs, _cur_task=task_id)
+            #         # pdb.set_trace()
+            #         one_hot_targets = torch.nn.functional.one_hot(targets, outputs.shape[1]).float()
+            #         positive_outputs.append((outputs * one_hot_targets).sum(dim=1).mean())
+            #         mask = 1 - one_hot_targets
+            #         negative_outputs.append(((outputs * mask).sum(dim=1) / mask.sum(dim=1)).mean())
+            #     model.train()
+            # positive_mean = sum(positive_outputs) / len(positive_outputs)
+            # negative_mean = sum(negative_outputs) / len(negative_outputs)
+            # all_mean = (sum(positive_outputs)+ sum(positive_outputs))/ (len(positive_outputs)+len(negative_outputs))
 
-            logging.info(f"positive_mean: {positive_mean}")
-            logging.info(f"negative_mean: {negative_mean}")
-            torch.cuda.empty_cache()
+            # logging.info(f"positive_mean: {positive_mean}")
+            # logging.info(f"negative_mean: {negative_mean}")
+            # torch.cuda.empty_cache()
 
         if cfg.real_replay:
             memory.add(*train_dataset[task_id].get_raw_samples(), None)
