@@ -481,7 +481,9 @@ class MultiheadAttention(nn.Module):
         #--------------FFT heree----------------
         self.n_frq = n_frq
         self.device = device
-        self.num_tasks = n_tasks
+
+        #Fix hard num tasks = 1
+        self.num_tasks = 1
         
         # self.coef_k = nn.ParameterList([nn.Parameter(torch.randn(self.n_frq), requires_grad=True) for _ in range(n_tasks)]).to(self.device)
         # self.coef_v = nn.ParameterList([nn.Parameter(torch.randn(self.n_frq), requires_grad=True) for _ in range(n_tasks)]).to(self.device)
@@ -496,17 +498,17 @@ class MultiheadAttention(nn.Module):
 
         self.coef_k = nn.ParameterList([
         nn.Parameter(torch.randn(self.n_frq, generator=g_cuda, device=self.device), requires_grad=True)
-        for _ in range(n_tasks)
+        for _ in range(self.num_tasks)
         ])
 
         self.coef_v = nn.ParameterList([
         nn.Parameter(torch.randn(self.n_frq, generator=g_cuda, device=self.device), requires_grad=True)
-        for _ in range(n_tasks)
+        for _ in range(self.num_tasks)
         ])
 
         self.indices = [
         self.select_pos(t, self.embed_dim, generator=g_cpu).to(self.device)
-        for t in range(n_tasks)
+        for t in range(self.num_tasks)
         ]
 
         self.init_param()
@@ -531,7 +533,7 @@ class MultiheadAttention(nn.Module):
         return indices
     
 
-    def get_delta_w_k(self, task, alpha=500):
+    def get_delta_w_k(self, task, alpha=3300):
         
         coef = self.coef_k[task]
         device = coef.device
@@ -540,7 +542,7 @@ class MultiheadAttention(nn.Module):
         F[indices[0,:], indices[1,:]] =  self.coef_k[task]
         return torch.fft.ifft2(F, dim=(-2,-1)).real * alpha
 
-    def get_delta_w_v(self, task, alpha=500):
+    def get_delta_w_v(self, task, alpha=300):
         coef = self.coef_v[task]
         device = coef.device
 
@@ -883,8 +885,9 @@ class MultiheadAttention(nn.Module):
                 # print("DEBUG: before sum k and v-===========================")
                 # print(f"DEBUG: k.grad_fn = {k.grad_fn}")
                 # print(f"DEBUG: v.grad_fn = {v.grad_fn}")
-                weight_k = torch.stack([self.get_delta_w_k(t) for t in range(_cur_task+1)], dim=0).sum(dim=0)
-                weight_v = torch.stack([self.get_delta_w_v(t) for t in range(_cur_task+1)], dim=0).sum(dim=0)
+                # fix hard ==========================================
+                weight_k = torch.stack([self.get_delta_w_k(t) for t in range(1)], dim=0).sum(dim=0)
+                weight_v = torch.stack([self.get_delta_w_v(t) for t in range(1)], dim=0).sum(dim=0)
                 k = k + linear(key, weight_k) * k_proj_weight_scaling
                 v = v + linear(value, weight_v) * v_proj_weight_scaling
                 # # Kiểm tra k và v có mang theo grad_fn không

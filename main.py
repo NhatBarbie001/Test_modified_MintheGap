@@ -132,24 +132,24 @@ def run_class_incremental(cfg, device):
         model.adaptation(task_id, reset=cfg.reset)
 
         # 将model的参数保存
-        for name, param in model.named_parameters():
-            param.requires_grad_(False)
-            try:
-                # for task_id in range(cfg.task_num):
-                if "classifier_pool" + "." + str(task_id) in name:
-                    param.requires_grad_(True)
-                if "coef_k" + "." + str(task_id) in name:
-                    param.requires_grad_(True)
-                if "coef_v" + "." + str(task_id) in name:
-                    param.requires_grad_(True)
-            except:
-                # for task_id in range(cfg.task_num):
-                if "classifier_pool" + "." + str(task_id) in name:
-                    param.requires_grad_(True)
-                if "coef_k" + "." + str(task_id) in name:
-                    param.requires_grad_(True)
-                if "coef_v" + "." + str(task_id) in name:
-                    param.requires_grad_(True)
+        # for name, param in model.named_parameters():
+        #     param.requires_grad_(False)
+        #     try:
+        #         # for task_id in range(cfg.task_num):
+        #         if "classifier_pool" + "." + str(task_id) in name:
+        #             param.requires_grad_(True)
+        #         if "coef_k" + "." + str(task_id) in name:
+        #             param.requires_grad_(True)
+        #         if "coef_v" + "." + str(task_id) in name:
+        #             param.requires_grad_(True)
+        #     except:
+        #         # for task_id in range(cfg.task_num):
+        #         if "classifier_pool" + "." + str(task_id) in name:
+        #             param.requires_grad_(True)
+        #         if "coef_k" + "." + str(task_id) in name:
+        #             param.requires_grad_(True)
+        #         if "coef_v" + "." + str(task_id) in name:
+        #             param.requires_grad_(True)
         trainable_params_incremental = {k: v for k, v in  model.named_parameters() if v.requires_grad}
         torch.save(trainable_params_incremental, f'trainable_params.pth')
         # --- DEBUG: In ra các tham số trainable ---
