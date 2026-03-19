@@ -533,7 +533,7 @@ class MultiheadAttention(nn.Module):
         return indices
     
 
-    def get_delta_w_k(self, task, alpha=3300):
+    def get_delta_w_k(self, task, alpha=300):
         
         coef = self.coef_k[task]
         device = coef.device
