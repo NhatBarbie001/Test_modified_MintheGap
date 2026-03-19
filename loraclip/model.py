@@ -230,12 +230,13 @@ class LoRAResidualAttentionBlock(nn.Module):
         self.ln_2 = LayerNorm(d_model)
         self.attn_mask = attn_mask
 
-    def attention(self, x: torch.Tensor, cur_task:int=-1):
+    def attention(self, x: torch.Tensor, _cur_task:int=-1):
         self.attn_mask = self.attn_mask.to(dtype=x.dtype, device=x.device) if self.attn_mask is not None else None
-        return self.attn(x, x, x, need_weights=False, attn_mask=self.attn_mask, _cur_task=cur_task)[0]
+        return self.attn(x, x, x, need_weights=False, attn_mask=self.attn_mask, _cur_task=_cur_task)[0]
 
     def forward(self, x: torch.Tensor, _cur_task:int=-1):
-        x = x + self.attention(self.ln_1(x), cur_task=_cur_task)
+        print(f"DEBUG: forward on LoRAResidualAttentionBlock models.py=================_cur_task:{_cur_task}=================")
+        x = x + self.attention(self.ln_1(x), _cur_task=_cur_task)
         if self.mlp_flag:
             x = x + self.adapter_mlp(self.ln_2(x)) + self.mlp(self.ln_2(x))
         else:
@@ -266,6 +267,7 @@ class LoRATransformer(nn.Module):
             for _ in range(layers)
         ])
     def forward(self, x: torch.Tensor, _cur_task:int=-1):
+        print(f"DEBUG: forward on LoRATransformer models.py=================_cur_task:{_cur_task}=================")
         for block in self.resblocks: 
             x = block(x, _cur_task=_cur_task) 
         return x
@@ -330,6 +332,7 @@ class LoRAVisionTransformer(nn.Module):
         self.proj = nn.Parameter(scale * torch.randn(width, output_dim))
 
     def forward(self, x: torch.Tensor, _cur_task:int=-1):
+        print(f"DEBUG: forwar LoRAVisionTransformer models.py=================_cur_task:{_cur_task}=================")
         x = self.conv1(x)  # shape = [*, width, grid, grid]
         x = x.reshape(x.shape[0], x.shape[1], -1)  # shape = [*, width, grid ** 2]
         x = x.permute(0, 2, 1)  # shape = [*, grid ** 2, width]
@@ -646,6 +649,7 @@ class LoRACLIP(nn.Module):
         return x
 
     def forward(self, image, text, _cur_task:int=-1):
+        print(f"DEBUG: forward on LoRACLIP on model.py=================_cur_task:{_cur_task}=================")
         image_features = self.encode_image(image, _cur_task=_cur_task)
         text_features = self.encode_text(text, _cur_task=_cur_task)
 
