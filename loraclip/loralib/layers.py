@@ -659,6 +659,7 @@ class MultiheadAttention(nn.Module):
             - attn_output_weights: :math:`(N, L, S)` where N is the batch size,
             L is the target sequence length, S is the source sequence length.
             """
+        print("DEBUG: on multi_head_attention forward-=================_cur_task:{_cur_task}==========")
         if not self._qkv_same_embed_dim:
             return self.multi_head_attention_forward(
                 query, key, value, self.embed_dim, self.num_heads,
@@ -885,13 +886,17 @@ class MultiheadAttention(nn.Module):
                 #
                 # Optional FFT-based task adaptation (task-specific delta weights).
                 # if self.fft_adapt and _cur_task is not None and _cur_task >= 0:
+                print("DEBUG: before sum k and v-===========================")
+                print(f"DEBUG: k.grad_fn = {k.grad_fn}")
+                print(f"DEBUG: v.grad_fn = {v.grad_fn}")
                 weight_k = torch.stack([self.get_delta_w_k(t) for t in range(_cur_task+1)], dim=0).sum(dim=0)
                 weight_v = torch.stack([self.get_delta_w_v(t) for t in range(_cur_task+1)], dim=0).sum(dim=0)
                 k = k + linear(key, weight_k) * k_proj_weight_scaling
                 v = v + linear(value, weight_v) * v_proj_weight_scaling
                 # # Kiểm tra k và v có mang theo grad_fn không
+                print(f"DEBUG: after sum k and v-===========================")
                 print(f"DEBUG: k.grad_fn = {k.grad_fn}")
-                # print(f"DEBUG: v.grad_fn = {v.grad_fn}")
+                print(f"DEBUG: v.grad_fn = {v.grad_fn}")
 
                 # Kiểm tra riêng thành phần FFT
                 # delta_k_out = linear(key, delta_w_k)
