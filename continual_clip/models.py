@@ -19,7 +19,7 @@ import numpy as np
 
 
 def forward_clip(self, image, text, _cur_task:int=-1, return_feature=False):
-    print(f"DEBUG: forward_clip models.py=================_cur_task:{_cur_task}=================")
+    # print(f"DEBUG: forward_clip models.py=================_cur_task:{_cur_task}=================")
     image_features = self.encode_image(image, _cur_task = _cur_task)
     text_features = self.encode_text(text, _cur_task=_cur_task)
 
