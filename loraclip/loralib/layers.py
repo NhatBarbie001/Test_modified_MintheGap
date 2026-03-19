@@ -885,11 +885,12 @@ class MultiheadAttention(nn.Module):
                 #
                 # Optional FFT-based task adaptation (task-specific delta weights).
                 # if self.fft_adapt and _cur_task is not None and _cur_task >= 0:
-                
-                k = k + linear(key, get_delta_w_k(_cur_task)) * k_proj_weight_scaling
-                v = v + linear(value, get_delta_w_v(_cur_task)) * v_proj_weight_scaling
+                weight_k = torch.stack([self.get_delta_w_k(t) for t in range(_cur_task+1)], dim=0).sum(dim=0)
+                weight_v = torch.stack([self.get_delta_w_v(t) for t in range(_cur_task+1)], dim=0).sum(dim=0)
+                k = k + linear(key, weight_k) * k_proj_weight_scaling
+                v = v + linear(value, weight_v) * v_proj_weight_scaling
                 # # Kiểm tra k và v có mang theo grad_fn không
-                # print(f"DEBUG: k.grad_fn = {k.grad_fn}")
+                print(f"DEBUG: k.grad_fn = {k.grad_fn}")
                 # print(f"DEBUG: v.grad_fn = {v.grad_fn}")
 
                 # Kiểm tra riêng thành phần FFT
