@@ -136,11 +136,11 @@ def run_class_incremental(cfg, device):
             param.requires_grad_(False)
             try:
                 #=========== Fix here===============
-                _modified_cur_task = task_id
-                if task_id < 5:
-                    _modified_cur_task = 0
-                else:
-                    _modified_cur_task = 1
+                _modified_cur_task = 00
+                # if task_id < 5:
+                #     _modified_cur_task = 0
+                # else:
+                #     _modified_cur_task = 1
                 # for task_id in range(cfg.task_num):
                 if "classifier_pool" + "." + str(_modified_cur_task) in name:
                     param.requires_grad_(True)
