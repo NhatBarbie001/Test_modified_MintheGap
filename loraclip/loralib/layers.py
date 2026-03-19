@@ -483,7 +483,7 @@ class MultiheadAttention(nn.Module):
         self.device = device
 
         #Fix hard num tasks = 1
-        self.num_tasks = n_task
+        self.num_tasks = n_tasks
         
         # self.coef_k = nn.ParameterList([nn.Parameter(torch.randn(self.n_frq), requires_grad=True) for _ in range(n_tasks)]).to(self.device)
         # self.coef_v = nn.ParameterList([nn.Parameter(torch.randn(self.n_frq), requires_grad=True) for _ in range(n_tasks)]).to(self.device)
