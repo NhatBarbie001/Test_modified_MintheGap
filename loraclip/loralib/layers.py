@@ -964,11 +964,11 @@ class MultiheadAttention(nn.Module):
                 k += linear(linear(key, k_proj_weight_non_opt_A), k_proj_weight_non_opt_B) * k_proj_weight_scaling
                 v += linear(linear(value, v_proj_weight_non_opt_A), v_proj_weight_non_opt_B) * v_proj_weight_scaling
                 # Optional FFT-based task adaptation (task-specific delta weights).
-                if self.fft_adapt and _cur_task is not None and _cur_task >= 0:
-                    delta_w_k = self._get_fft_delta_cached(_cur_task, kind="k", dtype=key.dtype, device=key.device)
-                    delta_w_v = self._get_fft_delta_cached(_cur_task, kind="v", dtype=value.dtype, device=value.device)
-                    k = k + linear(key, delta_w_k) * k_proj_weight_scaling
-                    v = v + linear(value, delta_w_v) * v_proj_weight_scaling
+                # if self.fft_adapt and _cur_task is not None and _cur_task >= 0:
+                #     delta_w_k = self._get_fft_delta_cached(_cur_task, kind="k", dtype=key.dtype, device=key.device)
+                #     delta_w_v = self._get_fft_delta_cached(_cur_task, kind="v", dtype=value.dtype, device=value.device)
+                #     k = k + linear(key, delta_w_k) * k_proj_weight_scaling
+                #     v = v + linear(value, delta_w_v) * v_proj_weight_scaling
 
         q = q * scaling
 
