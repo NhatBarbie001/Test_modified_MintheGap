@@ -119,7 +119,7 @@ class ClassIncrementalCLIP(nn.Module):
         return logits_per_image
 
     def forward(self, image, _cur_task :int=-1, test=False, all_test=False, return_feature=False,replay=None):
-        print(f"DEBUG: ClassIncrementalCLIP models.py=================_cur_task:{_cur_task}=================")
+        # print(f"DEBUG: ClassIncrementalCLIP models.py=================_cur_task:{_cur_task}=================")
         if test:
             # pdb.set_trace()
             with torch.no_grad():
