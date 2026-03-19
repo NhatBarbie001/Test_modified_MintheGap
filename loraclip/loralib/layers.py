@@ -379,9 +379,6 @@ class MultiheadAttention(nn.Module):
         n_tasks=10,
         n_frq=3000,
         device=torch.device("cuda" if torch.cuda.is_available() else "cpu"),
-        fft_adapt: bool = False,
-        fft_alpha: float = 300.0,
-        fft_cache_eval: bool = True,
     ):
         super(MultiheadAttention, self).__init__()
         self.embed_dim = embed_dim
@@ -484,11 +481,8 @@ class MultiheadAttention(nn.Module):
         #--------------FFT heree----------------
         self.n_frq = n_frq
         self.device = device
-        self.fft_adapt = fft_adapt
-        self.fft_alpha = fft_alpha
-        self.fft_cache_eval = fft_cache_eval
-        # Cache delta weights only for eval (coef are fixed).
-        self._fft_delta_cache = {}
+        self.num_tasks = n_tasks
+        
         # self.coef_k = nn.ParameterList([nn.Parameter(torch.randn(self.n_frq), requires_grad=True) for _ in range(n_tasks)]).to(self.device)
         # self.coef_v = nn.ParameterList([nn.Parameter(torch.randn(self.n_frq), requires_grad=True) for _ in range(n_tasks)]).to(self.device)
         # 👉 tạo generator riêng
@@ -537,7 +531,7 @@ class MultiheadAttention(nn.Module):
         return indices
     
 
-    def get_delta_w_k(self, task, alpha=200):
+    def get_delta_w_k(self, task, alpha=500):
         
         coef = self.coef_k[task]
         device = coef.device
@@ -546,7 +540,7 @@ class MultiheadAttention(nn.Module):
         F[indices[0,:], indices[1,:]] =  self.coef_k[task]
         return torch.fft.ifft2(F, dim=(-2,-1)).real * alpha
 
-    def get_delta_w_v(self, task, alpha=200):
+    def get_delta_w_v(self, task, alpha=500):
         coef = self.coef_v[task]
         device = coef.device
 
