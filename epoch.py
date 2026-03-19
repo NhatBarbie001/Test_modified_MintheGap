@@ -74,7 +74,9 @@ def run_class_incremental(cfg, device):
 
     cfg.class_order = utils.get_class_order(os.path.join(cfg.workdir, cfg.class_order))
     model = load_model(cfg, device)
-
+    for module in model.modules():
+            if isinstance(module, MultiheadAttention):
+                module.init_param()
     eval_dataset, classes_names = build_cl_scenarios(
         cfg, is_train=False, transforms=model.transforms
     )
@@ -96,10 +98,19 @@ def run_class_incremental(cfg, device):
     p1 = 0
     p2 = 0
     negative_records = 0
-    trainable_params = {k: v for k, v in model.named_parameters() if v.requires_grad}
+    trainable_params_ori = {k: v for k, v in model.named_parameters() if v.requires_grad}
     # pdb.set_trace()
-    torch.save(trainable_params, f'ori_params.pth')
-
+    torch.save(trainable_params_ori, f'ori_params.pth')
+    logging.info("="*30)
+    logging.info("LIST OF----- ori_params----- TRAINABLE PARAMETERS:")
+    trainable_params_count = 0
+    for name, param in model.named_parameters():
+        if param.requires_grad:
+            logging.info(f"Layer: {name:50} | Shape: {str(param.shape):30} | Size: {param.numel():,}")
+            trainable_params_count += param.numel()
+    logging.info(f"Total Trainable Params: {trainable_params_count:,}")
+    logging.info("="*30)
+    # ------------------------------------------
     if cfg.real_replay:
         memory = rehearsal.RehearsalMemory(
             memory_size=2000,
@@ -117,13 +128,40 @@ def run_class_incremental(cfg, device):
         
         logging.info(f"Evaluation for task {task_id} has started.")
         model.adaptation(task_id, reset=cfg.reset)
-
+        for name, param in model.named_parameters():
+            param.requires_grad_(False)
+            try:
+                # for task_id in range(cfg.task_num):
+                if "classifier_pool" + "." + str(task_id) in name:
+                    param.requires_grad_(True)
+                if "coef_k" + "." + str(task_id) in name:
+                    param.requires_grad_(True)
+                if "coef_v" + "." + str(task_id) in name:
+                    param.requires_grad_(True)
+            except:
+                # for task_id in range(cfg.task_num):
+                if "classifier_pool" + "." + str(task_id) in name:
+                    param.requires_grad_(True)
+                if "coef_k" + "." + str(task_id) in name:
+                    param.requires_grad_(True)
+                if "coef_v" + "." + str(task_id) in name:
+                    param.requires_grad_(True)
         # 将model的参数保存
-        trainable_params = {k: v for k, v in  model.named_parameters() if v.requires_grad}
-        torch.save(trainable_params, f'trainable_params.pth')
-
-        trainable_params = torch.load(f'ori_params.pth')
-        model.load_state_dict(trainable_params, strict=False)
+        trainable_params_incremental = {k: v for k, v in  model.named_parameters() if v.requires_grad}
+        torch.save(trainable_params_incremental, f'trainable_params.pth')
+        # --- DEBUG: In ra các tham số trainable ---
+        logging.info("="*30)
+        logging.info(f"LIST OF----- Incremental parameters: task {task_id}----- TRAINABLE PARAMETERS:")
+        trainable_params_count = 0
+        for name, param in model.named_parameters():
+            if param.requires_grad:
+                logging.info(f"Layer: {name:50} | Shape: {str(param.shape):30} | Size: {param.numel():,}")
+                trainable_params_count += param.numel()
+        logging.info(f"Total Trainable Params: {trainable_params_count:,}")
+        logging.info("="*30)
+    # ------------------------------------------
+        trainable_params_ori = torch.load(f'ori_params.pth')
+        model.load_state_dict(trainable_params_ori, strict=False)
 
         # 计算未经训练时正类别和负类别的输出平均值
         model.eval()  # 切换到评估模式
@@ -154,8 +192,8 @@ def run_class_incremental(cfg, device):
         logging.info(f"positive_records: {positive_mean}")
         logging.info(f"negative_records: {negative_mean}")
         # pdb.set_trace()
-        trainable_params = torch.load(f'trainable_params.pth')
-        model.load_state_dict(trainable_params, strict=False)
+        trainable_params_incremental = torch.load(f'trainable_params.pth')
+        model.load_state_dict(trainable_params_incremental, strict=False)
 
         model.train()
         if task_id > 0 and cfg.real_replay:
