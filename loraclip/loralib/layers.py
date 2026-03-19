@@ -482,7 +482,7 @@ class MultiheadAttention(nn.Module):
         self.n_frq = 5000 #n_frq
         self.device = device
         #Fix hard num tasks = 1
-        self.num_tasks = 2
+        self.num_tasks = 1
         
         # self.coef_k = nn.ParameterList([nn.Parameter(torch.randn(self.n_frq), requires_grad=True) for _ in range(n_tasks)]).to(self.device)
         # self.coef_v = nn.ParameterList([nn.Parameter(torch.randn(self.n_frq), requires_grad=True) for _ in range(n_tasks)]).to(self.device)
@@ -885,10 +885,7 @@ class MultiheadAttention(nn.Module):
                 # print(f"DEBUG: k.grad_fn = {k.grad_fn}")
                 # print(f"DEBUG: v.grad_fn = {v.grad_fn}")
                 # fix hard ==========================================
-                if _cur_task < 5:
-                    _cur_task = 0
-                else: 
-                    _cur_task = 1
+                _cur_task = 0
                 weight_k = torch.stack([self.get_delta_w_k(t) for t in range(_cur_task+1)], dim=0).sum(dim=0)
                 weight_v = torch.stack([self.get_delta_w_v(t) for t in range(_cur_task+1)], dim=0).sum(dim=0)
                 k = k + linear(key, weight_k) * k_proj_weight_scaling
