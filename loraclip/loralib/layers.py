@@ -479,7 +479,7 @@ class MultiheadAttention(nn.Module):
 
         self.add_zero_attn = add_zero_attn
         #--------------FFT heree----------------
-        self.n_frq = 3000 #n_frq
+        self.n_frq = 5000 #n_frq
         self.device = device
         #Fix hard num tasks = 1
         self.num_tasks = 1
