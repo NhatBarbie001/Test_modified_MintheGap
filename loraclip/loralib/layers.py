@@ -378,7 +378,9 @@ class MultiheadAttention(nn.Module):
         mlp=False,
         n_tasks=10,
         n_frq=8000,
-        device=torch.device("cuda" if torch.cuda.is_available() else "cpu"),
+        device=torch.device("cuda" if torch.cuda.is_available() else "cpu")
+        # is_vision_transformer=False,
+        # is_text_transformer=False
     ):
         super(MultiheadAttention, self).__init__()
         self.embed_dim = embed_dim
@@ -479,7 +481,7 @@ class MultiheadAttention(nn.Module):
 
         self.add_zero_attn = add_zero_attn
         #--------------FFT heree----------------
-        self.n_frq = 8000 #n_frq
+        self.n_frq = int(embed_dim*embed_dim*0.032) #n_frq = 3.2% of dim*dim is considered the best number
         self.device = device
         #Fix hard num tasks = 1
         self.num_tasks = 1
