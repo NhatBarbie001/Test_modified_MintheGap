@@ -377,7 +377,7 @@ class MultiheadAttention(nn.Module):
         only_kv=False,
         mlp=False,
         n_tasks=10,
-        n_frq=3000,
+        n_frq=8000,
         device=torch.device("cuda" if torch.cuda.is_available() else "cpu"),
     ):
         super(MultiheadAttention, self).__init__()
@@ -479,7 +479,7 @@ class MultiheadAttention(nn.Module):
 
         self.add_zero_attn = add_zero_attn
         #--------------FFT heree----------------
-        self.n_frq = 5000 #n_frq
+        self.n_frq = 8000 #n_frq
         self.device = device
         #Fix hard num tasks = 1
         self.num_tasks = 1
@@ -524,6 +524,7 @@ class MultiheadAttention(nn.Module):
     
     # ⚠️ sửa select_pos để nhận generator
     def select_pos(self, t, dim, generator=None):
+        print(f"embed_dim: " {dim})
         if generator is None:
             generator = torch.Generator(device=self.device).manual_seed(777 + t * 10)
 
