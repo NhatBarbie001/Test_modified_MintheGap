@@ -524,7 +524,7 @@ class MultiheadAttention(nn.Module):
     
     # ⚠️ sửa select_pos để nhận generator
     def select_pos(self, t, dim, generator=None):
-        print(f"embed_dim: " {dim})
+        print(f"embed_dim:  {dim}")
         if generator is None:
             generator = torch.Generator(device=self.device).manual_seed(777 + t * 10)
 
