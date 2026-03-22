@@ -175,10 +175,11 @@ class QuickGELU(nn.Module):
 
 
 class ResidualAttentionBlock(nn.Module):
-    def __init__(self, d_model: int, n_head: int, attn_mask: torch.Tensor = None):
+    def __init__(self, d_model: int, n_head: int, attn_mask: torch.Tensor = None, 
+        is_vision_transformer=False):
         super().__init__()
 
-        self.attn = nn.MultiheadAttention(d_model, n_head)
+        self.attn = nn.MultiheadAttention(d_model, n_head, is_vision_transformer=is_vision_transformer)
         self.ln_1 = LayerNorm(d_model)
         self.mlp = nn.Sequential(OrderedDict([
             ("c_fc", nn.Linear(d_model, d_model * 4)),
@@ -200,11 +201,13 @@ class ResidualAttentionBlock(nn.Module):
 
 # LoRA implementation of ResidualAttentionBlock:
 class LoRAResidualAttentionBlock(nn.Module):
-    def __init__(self, d_model: int, n_head: int, attn_mask: torch.Tensor = None, r=4, only_kv=False, mlp=False, n_tasks=10):
+    def __init__(self, d_model: int, n_head: int, attn_mask: torch.Tensor = None, r=4, only_kv=False, mlp=False, n_tasks=10,
+    is_vision_transformer=False):
         super().__init__()
 
         self.attn = lora.MultiheadAttention(
-            d_model, n_head, r=r, only_kv=only_kv, mlp=mlp, n_tasks=n_tasks
+            d_model, n_head, r=r, only_kv=only_kv, mlp=mlp, n_tasks=n_tasks,
+            is_vision_transformer=is_vision_transformer
         )
         self.ln_1 = LayerNorm(d_model)
         if only_kv:
@@ -245,11 +248,12 @@ class LoRAResidualAttentionBlock(nn.Module):
 
 
 class Transformer(nn.Module):
-    def __init__(self, width: int, layers: int, heads: int, attn_mask: torch.Tensor = None):
+    def __init__(self, width: int, layers: int, heads: int, attn_mask: torch.Tensor = None,
+    is_vision_transformer=False):
         super().__init__()
         self.width = width
         self.layers = layers
-        self.resblocks = nn.Sequential(*[ResidualAttentionBlock(width, heads, attn_mask) for _ in range(layers)])
+        self.resblocks = nn.Sequential(*[ResidualAttentionBlock(width, heads, attn_mask, is_vision_transformer=is_vision_transformer) for _ in range(layers)])
 
     def forward(self, x: torch.Tensor):
         return self.resblocks(x)
@@ -257,13 +261,14 @@ class Transformer(nn.Module):
 
 # LoRA implementation of Transformer:
 class LoRATransformer(nn.Module):
-    def __init__(self, width: int, layers: int, heads: int, attn_mask: torch.Tensor = None, r = 4, only_kv=False, mlp=False, n_tasks=10):
+    def __init__(self, width: int, layers: int, heads: int, attn_mask: torch.Tensor = None, r = 4, only_kv=False, mlp=False, n_tasks=10, is_vision_transformer=False):
         super().__init__()
         self.width = width
         self.layers = layers
         #self.resblocks = nn.Sequential(*[LoRAResidualAttentionBlock(width, heads, attn_mask, r=r, only_kv=only_kv, mlp=mlp) for _ in range(layers)])
         self.resblocks = nn.ModuleList([
-            LoRAResidualAttentionBlock(width, heads, attn_mask, r=r, only_kv=only_kv, mlp=mlp, n_tasks=n_tasks)
+            LoRAResidualAttentionBlock(width, heads, attn_mask, r=r, only_kv=only_kv, mlp=mlp, n_tasks=n_tasks,
+            is_vision_transformer=is_vision_transformer)
             for _ in range(layers)
         ])
     def forward(self, x: torch.Tensor, _cur_task:int=-1):
@@ -274,7 +279,8 @@ class LoRATransformer(nn.Module):
         #return self.resblocks(x)
 
 class VisionTransformer(nn.Module):
-    def __init__(self, input_resolution: int, patch_size: int, width: int, layers: int, heads: int, output_dim: int):
+    def __init__(self, input_resolution: int, patch_size: int, width: int, layers: int, heads: int, output_dim: int,
+    is_vision_transformer=False):
         super().__init__()
         self.input_resolution = input_resolution
         self.output_dim = output_dim
@@ -285,7 +291,7 @@ class VisionTransformer(nn.Module):
         self.positional_embedding = nn.Parameter(scale * torch.randn((input_resolution // patch_size) ** 2 + 1, width))
         self.ln_pre = LayerNorm(width)
 
-        self.transformer = Transformer(width, layers, heads)
+        self.transformer = Transformer(width, layers, heads, is_vision_transformer=is_vision_transformer)
 
         self.ln_post = LayerNorm(width)
         self.proj = nn.Parameter(scale * torch.randn(width, output_dim))
@@ -311,7 +317,8 @@ class VisionTransformer(nn.Module):
 
 
 class LoRAVisionTransformer(nn.Module):
-    def __init__(self, input_resolution: int, patch_size: int, width: int, layers: int, heads: int, output_dim: int, r: int, only_kv=False, mlp=False, n_tasks=10):
+    def __init__(self, input_resolution: int, patch_size: int, width: int, layers: int, heads: int, output_dim: int, r: int, only_kv=False, mlp=False, n_tasks=10,
+    is_vision_transformer=False):
         super().__init__()
         self.input_resolution = input_resolution
         self.output_dim = output_dim
@@ -325,7 +332,7 @@ class LoRAVisionTransformer(nn.Module):
         self.positional_embedding = nn.Parameter(scale * torch.randn((input_resolution // patch_size) ** 2 + 1, width))
         self.ln_pre = LayerNorm(width)
 
-        self.transformer = LoRATransformer(width, layers, heads, only_kv=only_kv, r=r, mlp=mlp, n_tasks=n_tasks)
+        self.transformer = LoRATransformer(width, layers, heads, only_kv=only_kv, r=r, mlp=mlp, n_tasks=n_tasks, is_vision_transformer=is_vision_transformer)
         # self.transformer = Transformer(width, layers, heads)
 
         self.ln_post = LayerNorm(width)
@@ -530,7 +537,8 @@ class LoRACLIP(nn.Module):
                     r=r,
                     only_kv=("only_kv" in lora_mode),
                     mlp="mlp" in lora_mode,
-                    n_tasks = n_tasks
+                    n_tasks = n_tasks,
+                    is_vision_transformer=True
                 )
             else:
                 self.visual = VisionTransformer(
