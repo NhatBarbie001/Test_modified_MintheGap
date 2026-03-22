@@ -377,8 +377,8 @@ class MultiheadAttention(nn.Module):
         only_kv=False,
         mlp=False,
         n_tasks=10,
-        n_frq_vision=5000,
-        n_frq_text=5000,
+        n_frq_vision=3000,
+        n_frq_text=3000,
         device=torch.device("cuda" if torch.cuda.is_available() else "cpu"),
         is_vision_transformer=False,
     ):
@@ -481,7 +481,7 @@ class MultiheadAttention(nn.Module):
 
         self.add_zero_attn = add_zero_attn
         #--------------FFT heree----------------
-        self.n_frq = 5000
+        self.n_frq = 3000
         if is_vision_transformer:
             self.n_frq = n_frq_vision
         else:
@@ -507,9 +507,9 @@ class MultiheadAttention(nn.Module):
         nn.Parameter(torch.randn(self.n_frq, generator=g_cuda, device=self.device), requires_grad=True)
         for _ in range(self.num_tasks)
         ])
-
+        self.image_dim = 224
         self.indices = [
-        self.select_pos(t, self.embed_dim, generator=g_cpu).to(self.device)
+        self.select_pos(t, self.image_dim, generator=g_cpu).to(self.device)
         for t in range(self.num_tasks)
         ]
 
@@ -536,7 +536,7 @@ class MultiheadAttention(nn.Module):
         return indices
     
 
-    def get_delta_w_k(self, task, alpha=2000):
+    def get_delta_w_k(self, task, alpha=3000):
         
         coef = self.coef_k[task]
         device = coef.device
@@ -545,7 +545,7 @@ class MultiheadAttention(nn.Module):
         F[indices[0,:], indices[1,:]] =  self.coef_k[task]
         return torch.fft.ifft2(F, dim=(-2,-1)).real * alpha
 
-    def get_delta_w_v(self, task, alpha=2000):
+    def get_delta_w_v(self, task, alpha=3000):
         coef = self.coef_v[task]
         device = coef.device
 
