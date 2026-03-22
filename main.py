@@ -132,30 +132,30 @@ def run_class_incremental(cfg, device):
         model.adaptation(task_id, reset=cfg.reset)
 
         # 将model的参数保存
-        # for name, param in model.named_parameters():
-        #     param.requires_grad_(False)
-        #     try:
-        #         #=========== Fix here===============
-        #         _modified_cur_task = 0
-        #         # if task_id < 5:
-        #         #     _modified_cur_task = 0
-        #         # else:
-        #         #     _modified_cur_task = 1
-        #         # for task_id in range(cfg.task_num):
-        #         if "classifier_pool" + "." + str(_modified_cur_task) in name:
-        #             param.requires_grad_(True)
-        #         if "coef_k" + "." + str(_modified_cur_task) in name:
-        #             param.requires_grad_(True)
-        #         if "coef_v" + "." + str(_modified_cur_task) in name:
-        #             param.requires_grad_(True)
-        #     except:
-        #         # for task_id in range(cfg.task_num):
-        #         if "classifier_pool" + "." + str(_modified_cur_task) in name:
-        #             param.requires_grad_(True)
-        #         if "coef_k" + "." + str(_modified_cur_task) in name:
-        #             param.requires_grad_(True)
-        #         if "coef_v" + "." + str(_modified_cur_task) in name:
-        #             param.requires_grad_(True)
+        for name, param in model.named_parameters():
+            param.requires_grad_(False)
+            try:
+                #=========== Fix here===============
+                _modified_cur_task = task_id
+                # if task_id < 5:
+                #     _modified_cur_task = 0
+                # else:
+                #     _modified_cur_task = 1
+                # for task_id in range(cfg.task_num):
+                if "classifier_pool" + "." + str(_modified_cur_task) in name:
+                    param.requires_grad_(True)
+                if "coef_k" + "." + str(_modified_cur_task) in name:
+                    param.requires_grad_(True)
+                if "coef_v" + "." + str(_modified_cur_task) in name:
+                    param.requires_grad_(True)
+            except:
+                # for task_id in range(cfg.task_num):
+                if "classifier_pool" + "." + str(_modified_cur_task) in name:
+                    param.requires_grad_(True)
+                if "coef_k" + "." + str(_modified_cur_task) in name:
+                    param.requires_grad_(True)
+                if "coef_v" + "." + str(_modified_cur_task) in name:
+                    param.requires_grad_(True)
         trainable_params_incremental = {k: v for k, v in  model.named_parameters() if v.requires_grad}
         torch.save(trainable_params_incremental, f'trainable_params.pth')
         # --- DEBUG: In ra các tham số trainable ---

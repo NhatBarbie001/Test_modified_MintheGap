@@ -889,7 +889,7 @@ class MultiheadAttention(nn.Module):
                 # print(f"DEBUG: k.grad_fn = {k.grad_fn}")
                 # print(f"DEBUG: v.grad_fn = {v.grad_fn}")
                 # fix hard ==========================================
-                _cur_task = 0
+                # _cur_task = 0
                 weight_k = torch.stack([self.get_delta_w_k(t) for t in range(_cur_task+1)], dim=0).sum(dim=0)
                 weight_v = torch.stack([self.get_delta_w_v(t) for t in range(_cur_task+1)], dim=0).sum(dim=0)
                 k = k + linear(key, weight_k) * k_proj_weight_scaling
