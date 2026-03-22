@@ -378,7 +378,7 @@ class MultiheadAttention(nn.Module):
         mlp=False,
         n_tasks=10,
         n_frq_vision=5000,
-        n_frq_text=3000,
+        n_frq_text=5000,
         device=torch.device("cuda" if torch.cuda.is_available() else "cpu"),
         is_vision_transformer=False,
     ):
@@ -536,7 +536,7 @@ class MultiheadAttention(nn.Module):
         return indices
     
 
-    def get_delta_w_k(self, task, alpha=3000):
+    def get_delta_w_k(self, task, alpha=5000):
         
         coef = self.coef_k[task]
         device = coef.device
@@ -545,7 +545,7 @@ class MultiheadAttention(nn.Module):
         F[indices[0,:], indices[1,:]] =  self.coef_k[task]
         return torch.fft.ifft2(F, dim=(-2,-1)).real * alpha
 
-    def get_delta_w_v(self, task, alpha=3000):
+    def get_delta_w_v(self, task, alpha=5000):
         coef = self.coef_v[task]
         device = coef.device
 
