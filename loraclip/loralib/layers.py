@@ -488,7 +488,7 @@ class MultiheadAttention(nn.Module):
         #     self.n_frq = n_frq_text
         self.device = device
         #Fix hard num tasks = 1
-        self.num_tasks = 1
+        self.num_tasks = n_tasks
         # 👉 tạo generator riêng
         # generator cho weight (GPU)
         g_cuda = torch.Generator(device=self.device)
