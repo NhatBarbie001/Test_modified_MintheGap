@@ -234,7 +234,7 @@ def run_class_incremental(cfg, device):
                 loss = torch.tensor(0.0).to(device)
                 replay_loss = torch.tensor(0.0, device=device)
                 torch.cuda.empty_cache()
-
+                print(f"Input shape: {inputs.shape}")
 
                 # targets = targets - targets_bais
                 inputs, targets = inputs.to(device), targets.to(device)
