@@ -482,10 +482,10 @@ class MultiheadAttention(nn.Module):
         self.add_zero_attn = add_zero_attn
         #--------------FFT heree----------------
         self.n_frq = 3000
-        if is_vision_transformer:
-            self.n_frq = n_frq_vision
-        else:
-            self.n_frq = n_frq_text
+        # if is_vision_transformer:
+        #     self.n_frq = n_frq_vision
+        # else:
+        #     self.n_frq = n_frq_text
         self.device = device
         #Fix hard num tasks = 1
         self.num_tasks = 1
