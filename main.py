@@ -148,8 +148,8 @@ def run_class_incremental(cfg, device):
                     param.requires_grad_(True)
                 if "coef_v" + "." + str(_modified_cur_task) in name and "visual" in name:
                     param.requires_grad_(True)
-                if 'lora_' in name and "visual" not in name and "lora_text_projection" not in name:
-                    param.requires_grad_(True)
+                # if 'lora_' in name and "visual" not in name and "lora_text_projection" not in name:
+                #     param.requires_grad_(True)
             except:
                 if "classifier_pool" + "." + str(_modified_cur_task) in name and "visual" in name:
                     param.requires_grad_(True)
@@ -157,8 +157,8 @@ def run_class_incremental(cfg, device):
                     param.requires_grad_(True)
                 if "coef_v" + "." + str(_modified_cur_task) in name and "visual" in name:
                     param.requires_grad_(True)
-                if 'lora_' in name and "visual" not in name and "lora_text_projection" not in name:
-                    param.requires_grad_(True)
+                # if 'lora_' in name and "visual" not in name and "lora_text_projection" not in name:
+                #     param.requires_grad_(True)
         trainable_params_incremental = {k: v for k, v in  model.named_parameters() if v.requires_grad}
         torch.save(trainable_params_incremental, f'trainable_params.pth')
         # --- DEBUG: In ra các tham số trainable ---

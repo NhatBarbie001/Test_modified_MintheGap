@@ -888,16 +888,13 @@ class MultiheadAttention(nn.Module):
                 # print(f"DEBUG: k.grad_fn = {k.grad_fn}")
                 # print(f"DEBUG: v.grad_fn = {v.grad_fn}")
                 # fix hard ==========================================
-                # _cur_task = 0
-                if self.is_vision_transformer:
-                    _cur_task = 0
-                    weight_k = torch.stack([self.get_delta_w_k(t) for t in range(_cur_task+1)], dim=0).sum(dim=0)
-                    weight_v = torch.stack([self.get_delta_w_v(t) for t in range(_cur_task+1)], dim=0).sum(dim=0)
-                    k = k + linear(key, weight_k) * k_proj_weight_scaling
-                    v = v + linear(value, weight_v) * v_proj_weight_scaling
-                else:
-                    k += linear(linear(key, k_proj_weight_non_opt_A), k_proj_weight_non_opt_B) * k_proj_weight_scaling
-                    v += linear(linear(value, v_proj_weight_non_opt_A), v_proj_weight_non_opt_B) * v_proj_weight_scaling
+                _cur_task = 0
+                
+                weight_k = torch.stack([self.get_delta_w_k(t) for t in range(_cur_task+1)], dim=0).sum(dim=0)
+                weight_v = torch.stack([self.get_delta_w_v(t) for t in range(_cur_task+1)], dim=0).sum(dim=0)
+                k = k + linear(key, weight_k) * k_proj_weight_scaling
+                v = v + linear(value, weight_v) * v_proj_weight_scaling
+                
                 # # Kiểm tra k và v có mang theo grad_fn không
                 # print(f"DEBUG: after sum k and v-===========================")
                 # print(f"DEBUG: k.grad_fn = {k.grad_fn}")
