@@ -481,38 +481,37 @@ class MultiheadAttention(nn.Module):
 
         self.add_zero_attn = add_zero_attn
         #--------------FFT heree----------------
-        self.is_vision_transformer = False
-        if is_vision_transformer:
-            self.is_vision_transformer = is_vision_transformer
-            self.n_frq = 3000
+        self.is_vision_transformer = is_vision_transformer
+        
+        self.n_frq = 3000
 
-            self.device = device
-            #Fix hard num tasks = 1
-            self.num_tasks = n_tasks
-            # 👉 tạo generator riêng
-            # generator cho weight (GPU)
-            g_cuda = torch.Generator(device=self.device)
-            g_cuda.manual_seed(29)
+        self.device = device
+        #Fix hard num tasks = 1
+        self.num_tasks = n_tasks
+        # 👉 tạo generator riêng
+        # generator cho weight (GPU)
+        g_cuda = torch.Generator(device=self.device)
+        g_cuda.manual_seed(29)
 
-            # generator cho indices (CPU)
-            g_cpu = torch.Generator(device="cpu")
-            g_cpu.manual_seed(11)
+        # generator cho indices (CPU)
+        g_cpu = torch.Generator(device="cpu")
+        g_cpu.manual_seed(11)
 
-            self.coef_k = nn.ParameterList([
-            nn.Parameter(torch.randn(self.n_frq, generator=g_cuda, device=self.device), requires_grad=True)
-            for _ in range(self.num_tasks)
-            ])
+        self.coef_k = nn.ParameterList([
+        nn.Parameter(torch.randn(self.n_frq, generator=g_cuda, device=self.device), requires_grad=True)
+        for _ in range(self.num_tasks)
+        ])
 
-            self.coef_v = nn.ParameterList([
-            nn.Parameter(torch.randn(self.n_frq, generator=g_cuda, device=self.device), requires_grad=True)
-            for _ in range(self.num_tasks)
-            ])
-            self.image_dim = 224
-            self.indices = [
-            self.select_pos(t, self.image_dim, generator=g_cpu).to(self.device)
-            for t in range(self.num_tasks)
-            ]
-
+        self.coef_v = nn.ParameterList([
+        nn.Parameter(torch.randn(self.n_frq, generator=g_cuda, device=self.device), requires_grad=True)
+        for _ in range(self.num_tasks)
+        ])
+        self.image_dim = 224
+        self.indices = [
+        self.select_pos(t, self.image_dim, generator=g_cpu).to(self.device)
+        for t in range(self.num_tasks)
+        ]
+        if self.is_vision_transformer:
             self.init_param()
         #---------------------------------------
 
