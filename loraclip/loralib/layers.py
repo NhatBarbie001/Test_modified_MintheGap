@@ -483,7 +483,7 @@ class MultiheadAttention(nn.Module):
         #--------------FFT heree----------------
         self.is_vision_transformer = is_vision_transformer
         
-        self.n_frq = embed_dim
+        self.n_frq = 5000
 
         self.device = device
         #Fix hard num tasks = 1
@@ -506,7 +506,7 @@ class MultiheadAttention(nn.Module):
         nn.Parameter(torch.randn(self.n_frq, generator=g_cuda, device=self.device), requires_grad=True)
         for _ in range(self.num_tasks)
         ])
-        self.image_dim = 224
+        self.image_dim = embed_dim
         self.indices = [
         self.select_pos(t, self.image_dim, generator=g_cpu).to(self.device)
         for t in range(self.num_tasks)
