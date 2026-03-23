@@ -483,7 +483,7 @@ class MultiheadAttention(nn.Module):
         #--------------FFT heree----------------
         self.is_vision_transformer = is_vision_transformer
         
-        self.n_frq = 5000
+        self.n_frq = embed_dim
 
         self.device = device
         #Fix hard num tasks = 1
@@ -511,8 +511,8 @@ class MultiheadAttention(nn.Module):
         self.select_pos(t, self.image_dim, generator=g_cpu).to(self.device)
         for t in range(self.num_tasks)
         ]
-        if self.is_vision_transformer:
-            self.init_param()
+        # if self.is_vision_transformer:
+        self.init_param()
         #---------------------------------------
 
 
