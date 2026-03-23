@@ -513,7 +513,7 @@ class MultiheadAttention(nn.Module):
             for t in range(self.num_tasks)
             ]
 
-        self.init_param()
+            self.init_param()
         #---------------------------------------
 
 
