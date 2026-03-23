@@ -483,11 +483,11 @@ class MultiheadAttention(nn.Module):
         #--------------FFT heree----------------
         self.is_vision_transformer = is_vision_transformer
         
-        self.n_frq = 3000
+        self.n_frq = 5000
 
         self.device = device
         #Fix hard num tasks = 1
-        self.num_tasks = n_tasks
+        self.num_tasks = 1
         # 👉 tạo generator riêng
         # generator cho weight (GPU)
         g_cuda = torch.Generator(device=self.device)
@@ -890,6 +890,7 @@ class MultiheadAttention(nn.Module):
                 # fix hard ==========================================
                 # _cur_task = 0
                 if self.is_vision_transformer:
+                    _cur_task = 1
                     weight_k = torch.stack([self.get_delta_w_k(t) for t in range(_cur_task+1)], dim=0).sum(dim=0)
                     weight_v = torch.stack([self.get_delta_w_v(t) for t in range(_cur_task+1)], dim=0).sum(dim=0)
                     k = k + linear(key, weight_k) * k_proj_weight_scaling

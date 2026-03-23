@@ -136,7 +136,7 @@ def run_class_incremental(cfg, device):
             param.requires_grad_(False)
             try:
                 #=========== Fix here===============
-                _modified_cur_task = task_id
+                _modified_cur_task = 0#task_id
                 # if task_id < 5:
                 #     _modified_cur_task = 0
                 # else:
